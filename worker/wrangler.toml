@@ -1,0 +1,32 @@
+# English Buddy - Cloudflare Worker settings.
+# You normally do NOT need to edit this file. The GitHub Actions workflow
+# (.github/workflows/deploy.yml) deploys it and fills in the settings below
+# from your GitHub repository variables and secrets.
+
+name = "english-buddy"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+compatibility_flags = ["nodejs_compat"]
+workers_dev = true
+
+[vars]
+# "gemini" (default, free) or "claude". Override with the repo variable AI_PROVIDER.
+AI_PROVIDER = "gemini"
+# Google model alias that always points at the newest free Flash-Lite model.
+GEMINI_MODEL = "gemini-flash-lite-latest"
+CLAUDE_MODEL = "claude-haiku-5-5"
+# Messages per family member per day.
+DAILY_LIMIT = "60"
+# Safety cap for the whole family per day.
+FAMILY_DAILY_LIMIT = "400"
+# Set automatically by the workflow to https://<your-github-name>.github.io
+ALLOWED_ORIGIN = ""
+
+# Stores daily message counts and rate limits (free plan, SQLite-backed).
+[[durable_objects.bindings]]
+name = "LIMITER"
+class_name = "Limiter"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["Limiter"]
