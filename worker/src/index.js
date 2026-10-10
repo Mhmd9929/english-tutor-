@@ -144,6 +144,7 @@ async function handleChat(request, env, ip) {
     mode: MODES.includes(body.mode) ? body.mode : 'free',
     topic: body.topic,
     words: body.words,
+    tutor: body.tutor,
   };
   const messages = prepareMessages(body.messages, ctx);
   if (!messages) return json({ error: 'bad_request', message: 'Last message must be from the student' }, 400, request, env);

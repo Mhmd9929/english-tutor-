@@ -131,6 +131,28 @@ You can also find the link here:
 - **Speaking speed:** go to Parents, then ✏️ Edit, then "Buddy's speaking speed". Young children get a slower voice automatically.
 - **Dark mode:** tap 🌙 / ☀️ at the top, or choose Auto, Light or Dark in Parents → Settings.
 
+### Choosing a tutor, accent and voice
+
+On the **Home** screen, tap **Your tutor → Change**. Each family member can pick their own tutor:
+
+| Tutor | Accent | Personality |
+|---|---|---|
+| 🤖 Buddy | 🇺🇸 American | cheerful robot friend (great for little kids) |
+| 👩‍🏫 Emma / 👨‍🏫 Oliver | 🇬🇧 British | teachers from London and Manchester |
+| 👩 Lily / 🧑 Jack | 🇺🇸 American | teacher from California, coach from New York |
+| 👱‍♀️ Chloe | 🇦🇺 Australian | teacher from Sydney |
+| 👩🏽 Priya | 🇮🇳 Indian | teacher from Bangalore |
+| 🧔 Seán | 🇮🇪 Irish | storyteller from Dublin |
+| 👩🏾 Thandi | 🇿🇦 South African | teacher from Cape Town |
+
+- The tutor talks like a real teacher in that accent and uses its words (British tutors say *holiday*, *mum* and *biscuit*; American tutors say *vacation*, *mom* and *cookie*).
+- Tap 🔊 to hear a tutor. Under **Voice** you can pick any voice installed on the phone, grouped by accent, or leave it on **Automatic**.
+- Add **Likes & interests** to a profile (Parents → ✏️ Edit), and the tutor will chat about them.
+- **For the most natural, human-sounding voices**, install better voices on the phone. They are free:
+  - **iPhone/iPad:** Settings → Accessibility → Spoken Content → Voices → English. Download voices marked **Enhanced** or **Premium** (for example British "Serena" or "Daniel").
+  - **Android:** Settings → Accessibility → Text-to-speech → Speech Services by Google → ⚙️ → Install voice data → English. Pick the accents you want.
+  - **Computer:** Microsoft Edge has very natural "Online (Natural)" voices built in.
+
 Profiles, progress and conversations are saved **on each phone**. They are not shared between phones.
 
 ---

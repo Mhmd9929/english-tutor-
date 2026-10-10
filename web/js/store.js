@@ -64,10 +64,11 @@ export function defaultRate(age) {
   return 0.95;
 }
 
-export function addProfile({ name, avatar, age, level }) {
+export function addProfile({ name, avatar, age, level, tutorId = 'buddy', interests = '' }) {
   const p = {
     id: uid('p'), name: name.trim().slice(0, 20), avatar, age: Number(age) || 8, level,
     rate: defaultRate(age), dailyLimit: 60, createdAt: Date.now(),
+    tutorId, voiceURI: '', interests: String(interests).slice(0, 160),
   };
   state.profiles.push(p);
   state.activeProfileId = p.id;

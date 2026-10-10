@@ -1,5 +1,6 @@
 // Talks to the English Buddy Cloudflare Worker.
 import { get, timeZone } from './store.js';
+import { tutorById } from './content.js';
 
 export class ApiError extends Error {
   // type: 'rate' | 'daily' | 'auth' | 'locked' | 'network' | 'config' | 'server'
@@ -45,10 +46,12 @@ async function request(path, { method = 'GET', body, code } = {}) {
 }
 
 export function chat({ profile, mode, topic, words, messages }) {
+  const t = tutorById(profile.tutorId);
   return request('/chat', {
     method: 'POST',
     body: {
-      profile: { id: profile.id, name: profile.name, age: profile.age, level: profile.level },
+      profile: { id: profile.id, name: profile.name, age: profile.age, level: profile.level, interests: profile.interests || '' },
+      tutor: { name: t.name, accent: t.accent, personality: t.personality },
       dailyLimit: profile.dailyLimit,
       mode, topic, words,
       tz: timeZone(),

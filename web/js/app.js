@@ -3,12 +3,20 @@ import * as store from './store.js';
 import * as api from './api.js';
 import * as speech from './speech.js';
 import { compareSpeech } from './diff.js';
-import { AVATARS, LEVELS, TOPICS, ROLEPLAYS, STORY_THEMES, MODES, SENTENCES, BADGES, WORDS } from './content.js';
+import { AVATARS, LEVELS, TOPICS, ROLEPLAYS, STORY_THEMES, MODES, SENTENCES, BADGES, WORDS, TUTORS, ACCENTS, tutorById, accentById } from './content.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
 const view = $('#view');
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// The learner's tutor character and how it should sound.
+const tutorOf = (p) => tutorById(p?.tutorId);
+function voiceOpts(p, override = {}) {
+  const t = tutorOf(p);
+  return { voiceURI: p?.voiceURI || '', lang: accentById(t.accent).lang, gender: t.gender, ...override };
+}
+const say = (text, rate, p = store.activeProfile(), override = {}) => speech.speak(text, rate ?? (p?.rate || 0.9), voiceOpts(p, override));
 
 const ui = {
   screen: 'home',
@@ -45,8 +53,6 @@ function boot() {
   document.addEventListener('keydown', () => { ui.lastActivity = Date.now(); }, { capture: true });
   window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); deferredInstall = e; if (ui.screen === 'home') render(); });
 
-  const voiceUri = localStorage.getItem('englishBuddy.voice');
-  if (voiceUri) speech.setPreferredVoice(voiceUri);
 
   setInterval(tick, 5000);
   const s = store.get();
@@ -74,7 +80,7 @@ function tick() {
 
 // ================================================================ navigation
 
-const TAB_OF = { home: 'home', pick: 'home', chat: 'talk', talk: 'talk', pron: 'home', progress: 'progress', parents: 'parents', 'edit-profile': 'parents', transcripts: 'parents', transcript: 'parents', profiles: 'home' };
+const TAB_OF = { home: 'home', pick: 'home', chat: 'talk', talk: 'talk', pron: 'home', progress: 'progress', parents: 'parents', 'edit-profile': 'parents', transcripts: 'parents', transcript: 'parents', profiles: 'home', tutors: 'home' };
 
 function go(screen, params = {}) {
   if (rec) { rec.abort(); rec = null; }
@@ -98,7 +104,7 @@ function render() {
 
   const screens = {
     setup: renderSetup, profiles: renderProfiles, home: renderHome, pick: renderPick, chat: renderChat,
-    pron: renderPron, progress: renderProgress, parents: renderParents, 'edit-profile': renderEditProfile,
+    pron: renderPron, tutors: renderTutors, progress: renderProgress, parents: renderParents, 'edit-profile': renderEditProfile,
     transcripts: renderTranscripts, transcript: renderTranscript,
   };
   if (!p && !['setup', 'profiles', 'parents', 'edit-profile'].includes(ui.screen)) { ui.screen = s.profiles.length ? 'profiles' : 'setup'; }
@@ -163,8 +169,11 @@ function profileForm(p, { submitLabel, setup = false } = {}) {
     <label class="field"><span>Age</span>
       <input name="age" type="number" inputmode="numeric" min="3" max="120" required value="${esc(p?.age || '')}" placeholder="e.g. 8"></label>
     <div class="field"><span>English level</span>${levelPicker(p?.level || 'Beginner')}</div>
+    <label class="field"><span>Likes &amp; interests (optional)</span>
+      <input name="interests" maxlength="160" autocomplete="off" value="${esc(p?.interests || '')}" placeholder="e.g. football, cats, drawing, Minecraft">
+      <small class="hint">The tutor uses these to chat about things you enjoy. No personal details, please.</small></label>
     ${p ? `
-      <label class="field"><span>Buddy's speaking speed: <b id="rate-val">${Number(p.rate).toFixed(2)}×</b></span>
+      <label class="field"><span>Tutor's speaking speed: <b id="rate-val">${Number(p.rate).toFixed(2)}×</b></span>
         <div class="row"><input name="rate" type="range" min="0.5" max="1.2" step="0.05" value="${p.rate}" data-input="rate">
         <button type="button" class="btn small ghost" data-action="test-rate">🔊 Test</button></div></label>
       <label class="field"><span>Daily message limit (max set by the Worker)</span>
@@ -255,6 +264,7 @@ function renderHome() {
       <span class="avatar lg">${esc(p.avatar)}</span>
       <div><h1>${hello}, ${esc(p.name)}!</h1><p>What shall we practise today?</p></div>
     </div>
+    ${tutorCard(p)}
     <div class="chips stats-mini">
       <span class="chip">🔥 ${sum.streak} day${sum.streak === 1 ? '' : 's'}</span>
       <span class="chip">⭐ ${sum.stars} star${sum.stars === 1 ? '' : 's'}</span>
@@ -268,6 +278,79 @@ function renderHome() {
         </button>`).join('')}
     </div>
     ${installCard()}
+  </section>`;
+}
+
+function tutorCard(p) {
+  const t = tutorOf(p);
+  const a = accentById(t.accent);
+  return `
+  <button class="card tutor-card" data-action="go" data-to="tutors">
+    <span class="avatar lg">${t.emoji}</span>
+    <span class="tc-text"><small>Your tutor</small><b>${esc(t.name)} ${a.flag}</b><small>${esc(a.label)} English</small></span>
+    <span class="tc-change">Change ›</span>
+  </button>`;
+}
+
+// ================================================================ tutor, accent & voice
+
+function voiceSelect(p) {
+  const voices = speech.englishVoices();
+  if (!voices.length) return '<p class="hint">This device did not share its voice list, so the tutor uses the default voice.</p>';
+  const groups = ACCENTS.map((a) => ({ a, list: voices.filter((v) => speech.voiceMatchesAccent(v, a.lang)) })).filter((g) => g.list.length);
+  const known = new Set(groups.flatMap((g) => g.list));
+  const other = voices.filter((v) => !known.has(v));
+  const opt = (v) => {
+    const g = speech.voiceGender(v);
+    return `<option value="${esc(v.voiceURI)}" ${p.voiceURI === v.voiceURI ? 'selected' : ''}>${esc(v.name.replace(/\s*\(.*\)$/, '').replace(/^Microsoft\s+/, ''))}${g ? ` (${g})` : ''}</option>`;
+  };
+  return `
+  <select data-input="voice" aria-label="Voice">
+    <option value="" ${p.voiceURI ? '' : 'selected'}>✨ Automatic: best voice for ${esc(tutorOf(p).name)}</option>
+    ${groups.map((g) => `<optgroup label="${g.a.flag} ${esc(g.a.label)}">${g.list.map(opt).join('')}</optgroup>`).join('')}
+    ${other.length ? `<optgroup label="🌍 Other English">${other.map(opt).join('')}</optgroup>` : ''}
+  </select>`;
+}
+
+function renderTutors() {
+  const p = store.activeProfile();
+  const current = tutorOf(p);
+  const accent = accentById(current.accent);
+  const missing = speech.englishVoices().length && !speech.hasAccent(accent.lang);
+  const ios = /iphone|ipad|ipod|macintosh/i.test(navigator.userAgent);
+  return `
+  <section>
+    <button class="back" data-action="go" data-to="home">← Back</button>
+    <h1>🗣️ Choose your tutor</h1>
+    <p class="lead">Each tutor has their own accent and personality. Tap 🔊 to hear them.</p>
+    <div class="tutor-grid">
+      ${TUTORS.map((t) => {
+        const a = accentById(t.accent);
+        return `
+        <div class="tutor-opt ${t.id === current.id ? 'active' : ''}">
+          <button class="tutor-pick" data-action="pick-tutor" data-id="${t.id}" aria-pressed="${t.id === current.id}">
+            <span class="avatar lg">${t.emoji}</span>
+            <b>${esc(t.name)}</b>
+            <small>${a.flag} ${esc(a.label)}</small>
+            <small class="bio">${esc(t.bio)}</small>
+          </button>
+          <button class="preview" data-action="preview-tutor" data-id="${t.id}" aria-label="Hear ${esc(t.name)}">🔊</button>
+        </div>`;
+      }).join('')}
+    </div>
+
+    <div class="card form">
+      <h2>Voice</h2>
+      <div class="field">
+        <div class="row">${voiceSelect(p)}<button type="button" class="btn small ghost" data-action="preview-voice" aria-label="Test voice">🔊</button></div>
+        ${missing ? `<p class="hint">⚠️ This device has no ${esc(accent.label)} voice yet, so you may hear a different accent.
+          ${ios ? 'On iPhone/iPad: <b>Settings → Accessibility → Spoken Content → Voices → English</b>, then download a voice (choose “Enhanced” or “Premium” for the most natural sound).'
+            : 'On Android: <b>Settings → Accessibility → Text-to-speech → Preferred engine (Speech Services by Google) → ⚙️ → Install voice data → English</b>, then pick the accent you want.'}</p>` : ''}
+        <p class="hint">💡 Tip: voices called <b>Natural</b>, <b>Neural</b>, <b>Enhanced</b> or <b>Premium</b> sound the most human. Microsoft Edge and newer iPhones have the best ones.</p>
+      </div>
+      <label class="field"><span>Speaking speed: <b id="tutor-rate-val">${Number(p.rate).toFixed(2)}×</b></span>
+        <input type="range" min="0.5" max="1.2" step="0.05" value="${p.rate}" data-input="tutor-rate"></label>
+    </div>
   </section>`;
 }
 
@@ -309,7 +392,7 @@ function renderPick() {
             <span class="emoji">${emoji}</span><b>${esc(w)}</b><small>${esc(meaning)}</small>${learned.has(w) ? '<i>✅</i>' : ''}
           </button>`).join('')}
       </div>
-      <button class="btn primary big" data-action="start" data-mode="words">Practise with Buddy 🎤</button>
+      <button class="btn primary big" data-action="start" data-mode="words">Practise with ${esc(tutorOf(p).name)} 🎤</button>
     </section>`;
   }
   return '';
@@ -323,6 +406,8 @@ function startChat(mode, topic) {
   if (mode === 'words') words = store.wordsOfTheDay(p).map(([w]) => w);
   if (mode === 'story') topic = STORY_THEMES[Math.floor(Math.random() * STORY_THEMES.length)];
   const session = store.startSession(p.id, mode, topic);
+  session.tutorId = tutorOf(p).id;
+  store.save();
   chat = { mode, topic, words, messages: [], sessionId: session.id, busy: false, notice: null, interim: '', profileId: p.id };
   store.recordMode(p.id, mode);
   go('chat');
@@ -342,7 +427,7 @@ function renderChat() {
     <section class="center empty">
       <div class="big-emoji">💬</div>
       <h1>Ready to talk?</h1>
-      <p class="lead">Start a conversation with Buddy.</p>
+      <p class="lead">Start a conversation with ${esc(tutorOf(store.activeProfile()).name)}.</p>
       <button class="btn primary big" data-action="start" data-mode="free" data-topic="hobbies">Start Free Talk</button>
       <button class="btn ghost big" data-action="go" data-to="home">Choose an activity</button>
     </section>`;
@@ -360,7 +445,7 @@ function renderChat() {
     <div class="messages" id="messages" aria-live="polite">
       ${chat.messages.map(messageHtml).join('')}
       ${chat.interim ? `<div class="msg user interim"><p>${esc(chat.interim)}…</p></div>` : ''}
-      ${chat.busy ? '<div class="msg buddy typing" aria-label="Buddy is thinking"><span></span><span></span><span></span></div>' : ''}
+      ${chat.busy ? '<div class="msg buddy typing" aria-label="Your tutor is thinking"><span></span><span></span><span></span></div>' : ''}
       ${chat.notice ? noticeHtml(chat.notice) : ''}
     </div>
     ${composerHtml()}
@@ -371,7 +456,7 @@ function messageHtml(m, i) {
   if (m.role === 'assistant') {
     return `
     <div class="msg buddy">
-      <span class="avatar sm" aria-hidden="true">🤖</span>
+      <span class="avatar sm" aria-hidden="true">${tutorOf(store.activeProfile()).emoji}</span>
       <p>${esc(m.content)}</p>
       <button class="replay" data-action="replay" data-index="${i}" aria-label="Replay">🔊</button>
     </div>`;
@@ -407,7 +492,7 @@ function composerHtml() {
     <button type="button" class="mic" id="mic-btn" ${disabled} aria-label="Hold to talk">
       <span class="mic-icon" aria-hidden="true">🎤</span><span class="mic-label">${rec ? 'Listening…' : 'Hold to talk'}</span>
     </button>
-    <button type="button" class="icon-btn" data-action="stop-voice" aria-label="Stop Buddy talking">🤫</button>
+    <button type="button" class="icon-btn" data-action="stop-voice" aria-label="Stop the tutor talking">🤫</button>
   </div>`;
 }
 
@@ -467,7 +552,7 @@ async function askBuddy(isRetry = false) {
     store.appendToSession(p.id, c.sessionId, { role: 'assistant', text: data.reply, fixes: data.fixes });
     rerenderChat();
     ui.lastActivity = Date.now();
-    speech.speak(data.reply, p.rate || 0.9);
+    say(data.reply, p.rate || 0.9, p);
   } catch (err) {
     if (chat !== c) return;
     c.busy = false;
@@ -475,9 +560,9 @@ async function askBuddy(isRetry = false) {
     if (type === 'rate' && !isRetry) {
       // Friendly message, then one automatic retry.
       let wait = Math.min(30, Math.max(5, err.retryAfter || 20));
-      c.notice = { kind: 'rate', text: '☕ Buddy needs a short break, try again in a minute.', countdown: wait };
+      c.notice = { kind: 'rate', text: `☕ ${tutorOf(p).name} needs a short break, try again in a minute.`, countdown: wait };
       rerenderChat();
-      speech.speak('Buddy needs a short break. I will try again in a moment.', p.rate || 0.9);
+      say('I need a short break. I will try again in a moment.', p.rate || 0.9, p);
       while (wait > 0) {
         await sleep(1000);
         if (chat !== c) return;
@@ -489,7 +574,7 @@ async function askBuddy(isRetry = false) {
       askBuddy(true);
       return;
     }
-    if (type === 'rate') c.notice = { kind: 'rate', text: '☕ Buddy needs a short break, try again in a minute.', retry: true };
+    if (type === 'rate') c.notice = { kind: 'rate', text: `☕ ${tutorOf(p).name} needs a short break, try again in a minute.`, retry: true };
     else if (type === 'daily') c.notice = { kind: 'daily', text: "🌙 That's all the talking for today! Great job. Come back tomorrow for more.", parents: true };
     else if (type === 'auth') c.notice = { kind: 'error', text: '🔑 The family code is wrong. Ask a parent to fix it in the Parents tab.', parents: true };
     else if (type === 'config') c.notice = { kind: 'error', text: `⚙️ ${err.message}`, parents: true };
@@ -616,7 +701,7 @@ function renderPron() {
   <section class="pron">
     <button class="back" data-action="go" data-to="home">← Back</button>
     <h1>🎤 Pronunciation</h1>
-    <p class="lead">Listen to Buddy, then hold the button and say the sentence.</p>
+    <p class="lead">Listen to ${esc(tutorOf(p).name)}, then hold the button and say the sentence.</p>
     <div class="card sentence"><p class="target">${target}</p></div>
     <div class="row center gap">
       <button class="btn big c1" data-action="pron-listen">🔊 Listen</button>
@@ -642,7 +727,7 @@ function onPronSpeech(text) {
   store.recordMessage(p.id);
   render();
   const s = pron.result.score;
-  speech.speak(s >= 90 ? 'Amazing! Perfect!' : s >= 70 ? 'Great job!' : s >= 40 ? 'Good try! Let\'s practise the red words.' : 'Let\'s try again together.', p.rate);
+  say(s >= 90 ? 'Amazing! Perfect!' : s >= 70 ? 'Great job!' : s >= 40 ? 'Good try! Let\'s practise the red words.' : 'Let\'s try again together.', p.rate, p);
   popStar(s >= 90 ? 3 : s >= 70 ? 2 : 1);
   celebrate(store.checkBadges(p.id));
 }
@@ -690,7 +775,7 @@ function renderProgress() {
     <div class="card">
       <h2>Things to practise</h2>
       ${mistakes.length ? `<ul class="mistakes">${mistakes.map(([k, n]) => `<li><span>${esc(k)}</span><small>×${n}</small></li>`).join('')}</ul>`
-        : '<p class="hint">No mistakes yet. Keep talking with Buddy!</p>'}
+        : '<p class="hint">No mistakes yet. Keep talking with your tutor!</p>'}
     </div>
   </section>`;
 }
@@ -723,8 +808,6 @@ function renderParents() {
       <p class="hint center">Forgot the PIN? Clear this website's data in the browser settings to start again.</p>
     </section>`;
   }
-  const voices = speech.englishVoices();
-  const currentVoice = speech.bestVoice();
   return `
   <section>
     <div class="row between"><h1>👨‍👩‍👧 Parents</h1><button class="btn small ghost" data-action="lock">🔒 Lock</button></div>
@@ -757,12 +840,7 @@ function renderParents() {
         <div class="row"><input name="code" required autocomplete="off" autocapitalize="off" value="${esc(s.familyCode)}"><button class="btn small primary" type="submit">Save</button></div>
         <p class="hint" id="code-msg"></p>
       </form>
-      <label class="field"><span>Buddy's voice</span>
-        <div class="row">
-          <select data-input="voice">${voices.length ? voices.map((v) => `<option value="${esc(v.voiceURI)}" ${currentVoice?.voiceURI === v.voiceURI ? 'selected' : ''}>${esc(v.name)} (${esc(v.lang)})</option>`).join('') : '<option>Default voice</option>'}</select>
-          <button type="button" class="btn small ghost" data-action="test-voice">🔊</button>
-        </div>
-      </label>
+      <p class="hint">🗣️ Each person chooses their own tutor, accent and voice on the Home screen ("Your tutor → Change").</p>
       <div class="field"><span>Theme</span>
         <div class="seg">
           ${['auto', 'light', 'dark'].map((t) => `<label><input type="radio" name="theme" value="${t}" data-input="theme" ${s.theme === t ? 'checked' : ''}><span>${t === 'auto' ? '🌓 Auto' : t === 'light' ? '☀️ Light' : '🌙 Dark'}</span></label>`).join('')}
@@ -837,7 +915,7 @@ function renderTranscript() {
     <p class="hint">${new Date(s.startedAt).toLocaleString()}</p>
     <div class="messages">
       ${s.messages.map((m) => (m.role === 'assistant'
-        ? `<div class="msg buddy"><span class="avatar sm">🤖</span><p>${esc(m.text)}</p></div>${(m.fixes || []).map((f) => `<div class="fix">✏️ ${esc(f.wrong)} → <b>${esc(f.right)}</b></div>`).join('')}`
+        ? `<div class="msg buddy"><span class="avatar sm">${tutorById(s.tutorId).emoji}</span><p>${esc(m.text)}</p></div>${(m.fixes || []).map((f) => `<div class="fix">✏️ ${esc(f.wrong)} → <b>${esc(f.right)}</b></div>`).join('')}`
         : `<div class="msg user"><p>${esc(m.text)}</p></div>`)).join('')}
     </div>
   </section>`;
@@ -881,26 +959,39 @@ async function onClick(e) {
     case 'restart-chat': if (chat) startChat(chat.mode, chat.mode === 'story' ? undefined : chat.topic); break;
     case 'replay': {
       const m = chat?.messages[Number(el.dataset.index)];
-      if (m) speech.speak(m.content, p?.rate || 0.9);
+      if (m) say(m.content, p?.rate || 0.9, p);
       break;
     }
-    case 'say': speech.speak(el.dataset.text, (p?.rate || 0.9) * 0.9); break;
+    case 'say': say(el.dataset.text, (p?.rate || 0.9) * 0.9, p); break;
     case 'retry': askBuddy(); break;
     case 'input-text': ui.inputMode = 'text'; render(); $('.composer input')?.focus(); break;
     case 'input-voice': ui.inputMode = 'voice'; render(); break;
     case 'stop-voice': speech.stopSpeaking(); break;
-    case 'pron-listen': speech.speak(pron.sentence, p.rate); break;
-    case 'pron-slow': speech.speak(pron.sentence, Math.max(0.5, p.rate - 0.25)); break;
-    case 'pron-next': newPronSentence(); render(); speech.speak(pron.sentence, p.rate); break;
+    case 'pron-listen': say(pron.sentence, p.rate, p); break;
+    case 'pron-slow': say(pron.sentence, Math.max(0.5, p.rate - 0.25), p); break;
+    case 'pron-next': newPronSentence(); render(); say(pron.sentence, p.rate, p); break;
     case 'hide-install': localStorage.setItem('englishBuddy.hideInstall', '1'); render(); break;
     case 'install':
       if (deferredInstall) { deferredInstall.prompt(); await deferredInstall.userChoice.catch(() => {}); deferredInstall = null; render(); }
       break;
     case 'lock': ui.parentUnlocked = false; render(); break;
-    case 'test-voice': speech.speak(`Hello! I am Buddy, your English tutor.`, 0.9); break;
+    case 'pick-tutor': {
+      const t = tutorById(el.dataset.id);
+      store.updateProfile(p.id, { tutorId: t.id, voiceURI: '' });
+      render();
+      say(`Hi ${p.name}! I'm ${t.name}. Let's practise English together!`, p.rate, store.activeProfile());
+      break;
+    }
+    case 'preview-tutor': {
+      const t = tutorById(el.dataset.id);
+      say(`Hi! I'm ${t.name}. ${t.bio}`, p.rate, { ...p, tutorId: t.id, voiceURI: '' });
+      break;
+    }
+    case 'preview-voice': say(`Hi ${p.name}! This is how I sound.`, p.rate, p); break;
     case 'test-rate': {
       const rate = Number($('input[name="rate"]')?.value || 0.9);
-      speech.speak('Hello! Let us learn English together.', rate);
+      const target = store.get().profiles.find((x) => x.id === ui.params?.id) || p;
+      say('Hello! Let us learn English together.', rate, target);
       break;
     }
     case 'delete-profile': {
@@ -967,6 +1058,7 @@ async function onSubmit(e) {
       avatar: f.get('avatar') || AVATARS[0],
       age: Math.max(3, Math.min(120, parseInt(f.get('age'), 10) || 8)),
       level: LEVELS.includes(f.get('level')) ? f.get('level') : 'Beginner',
+      interests: String(f.get('interests') || '').trim().slice(0, 160),
     };
     if (!data.name) { toast('Please enter a name.'); return; }
     const id = form.dataset.id;
@@ -1021,9 +1113,15 @@ function onInput(e) {
   if (kind === 'rate') { const v = $('#rate-val'); if (v) v.textContent = `${Number(e.target.value).toFixed(2)}×`; }
   if (kind === 'theme') { store.set({ theme: e.target.value }); applyTheme(); }
   if (kind === 'voice') {
-    localStorage.setItem('englishBuddy.voice', e.target.value);
-    speech.setPreferredVoice(e.target.value);
-    speech.speak('Hi! This is my new voice.', 0.9);
+    const p = store.activeProfile();
+    store.updateProfile(p.id, { voiceURI: e.target.value });
+    say('Hi! This is my new voice.', p.rate, store.activeProfile());
+  }
+  if (kind === 'tutor-rate') {
+    const p = store.activeProfile();
+    store.updateProfile(p.id, { rate: Number(e.target.value) });
+    const v = $('#tutor-rate-val');
+    if (v) v.textContent = `${Number(e.target.value).toFixed(2)}×`;
   }
 }
 
