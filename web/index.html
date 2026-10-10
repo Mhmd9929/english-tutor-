@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>English Buddy</title>
+  <meta name="description" content="A friendly voice-based English tutor for the whole family.">
+  <meta name="theme-color" content="#7c5cff" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1b1640" media="(prefers-color-scheme: dark)">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="English Buddy">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="icons/favicon-32.png" sizes="32x32" type="image/png">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <!-- iPhone splash screens -->
+  <link rel="apple-touch-startup-image" media="(device-width: 440px) and (device-height: 956px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1320x2868.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 402px) and (device-height: 874px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1206x2622.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 430px) and (device-height: 932px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1290x2796.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 393px) and (device-height: 852px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1179x2556.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 428px) and (device-height: 926px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1284x2778.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1170x2532.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="icons/splash-1125x2436.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 414px) and (device-height: 896px) and (-webkit-device-pixel-ratio: 2)" href="icons/splash-828x1792.png">
+  <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 667px) and (-webkit-device-pixel-ratio: 2)" href="icons/splash-750x1334.png">
+  <link rel="stylesheet" href="styles.css">
+  <script src="config.js"></script>
+  <script type="module" src="js/app.js"></script>
+</head>
+<body>
+  <div id="splash" aria-hidden="true">
+    <img src="icons/icon-192.png" alt="" width="120" height="120">
+    <b>English Buddy</b>
+  </div>
+
+  <header class="topbar">
+    <button id="profile-btn" class="profile-btn" aria-label="Switch learner"></button>
+    <div class="top-right">
+      <span class="stars" aria-label="Stars"><span aria-hidden="true">⭐</span> <b id="star-count">0</b></span>
+      <button id="theme-btn" class="icon-btn" aria-label="Switch theme">🌙</button>
+    </div>
+  </header>
+
+  <main id="view">
+    <noscript><p style="padding:24px">English Buddy needs JavaScript turned on.</p></noscript>
+  </main>
+
+  <nav class="tabbar" aria-label="Main">
+    <button data-tab="home"><span aria-hidden="true">🏠</span>Home</button>
+    <button data-tab="talk"><span aria-hidden="true">💬</span>Talk</button>
+    <button data-tab="progress"><span aria-hidden="true">⭐</span>Progress</button>
+    <button data-tab="parents"><span aria-hidden="true">👨‍👩‍👧</span>Parents</button>
+  </nav>
+
+  <div id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>
