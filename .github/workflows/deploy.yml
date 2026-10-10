@@ -106,6 +106,15 @@ jobs:
             exit "$status"
           fi
           URL=$(grep -oE 'https://[a-zA-Z0-9._-]+\.workers\.dev' deploy.log | head -n1)
+          if [ -z "$URL" ]; then
+            # Wrangler sometimes exits successfully without publishing anything.
+            if grep -qi "workers.dev subdomain" deploy.log; then
+              echo "::error title=Cloudflare setup needed::Your Cloudflare account has no workers.dev address yet. Open dash.cloudflare.com -> Workers & Pages (or the onboarding link in the log above), choose a subdomain name, then re-run this workflow."
+            else
+              echo "::error title=Worker not published::Cloudflare did not return a workers.dev address. See the log above."
+            fi
+            exit 1
+          fi
           echo "Worker URL: $URL"
           echo "url=$URL" >> "$GITHUB_OUTPUT"
 
