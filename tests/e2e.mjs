@@ -67,8 +67,14 @@ const fakeSpeech = () => {
   }
   const synth = {
     speaking: false,
-    getVoices: () => [{ name: 'Google US English', lang: 'en-US', voiceURI: 'g-us' }, { name: 'Zarvox', lang: 'en-US', voiceURI: 'z' }],
-    speak(u) { if (u.text.trim()) window.__spoken.push({ text: u.text, rate: u.rate, voice: u.voice?.name }); setTimeout(() => u.onend?.(), 10); },
+    getVoices: () => [
+      { name: 'Google US English', lang: 'en-US', voiceURI: 'g-us' },
+      { name: 'Daniel', lang: 'en-GB', voiceURI: 'daniel' },
+      { name: 'Google UK English Female', lang: 'en-GB', voiceURI: 'g-uk-f' },
+      { name: 'Karen', lang: 'en-AU', voiceURI: 'karen' },
+      { name: 'Zarvox', lang: 'en-US', voiceURI: 'z' },
+    ],
+    speak(u) { if (u.text.trim()) window.__spoken.push({ text: u.text, rate: u.rate, voice: u.voice?.name, lang: u.lang }); setTimeout(() => u.onend?.(), 10); },
     cancel() {},
     addEventListener() {},
   };
@@ -126,6 +132,7 @@ await step('first run: welcome, family code, create profile', async () => {
   await page.click('text=Check code');
   await page.waitForSelector('text=Who is learning?');
   await page.fill('input[name=name]', 'Mia');
+  await page.click('.seg.years label:has-text("Older")');
   await page.click('.avatar-opt:nth-child(5)');
   await page.fill('input[name=age]', '7');
   await page.click('.seg label:has-text("Beginner")');
@@ -272,6 +279,7 @@ await step('parents: create PIN, dashboard, transcripts, edit profile, lock', as
 
   await page.click('text=Add family member');
   await page.fill('input[name=name]', 'Dad');
+  await page.click('.seg.years label:has-text("Older")');
   await page.fill('input[name=age]', '41');
   await page.click('.seg label:has-text("Advanced")');
   await page.click('text=Create profile');
@@ -322,6 +330,39 @@ await step('dark mode toggle', async () => {
   await shot(page, '10-home-dark');
   await page.click('#theme-btn');
   assert.equal(await page.evaluate(() => document.documentElement.dataset.theme), 'light');
+});
+
+await step('tutor & accent: pick Emma (British), choose a voice, prompt gets the tutor', async () => {
+  await page.click('.tabbar [data-tab=home]');
+  await page.click('.tutor-card');
+  await page.waitForSelector('text=Choose your tutor');
+  await page.click('.tutor-opt:has-text("Chloe") .preview');
+  let last = await page.evaluate(() => window.__spoken.at(-1));
+  assert.equal(last.voice, 'Karen', 'Australian preview uses an Australian voice');
+  await page.click('.tutor-pick:has-text("Emma")');
+  last = await page.evaluate(() => window.__spoken.at(-1));
+  assert.equal(last.voice, 'Google UK English Female', 'Emma = British female voice');
+  assert.equal(last.lang, 'en-GB');
+  assert.equal(await page.locator('.tutor-opt.active >> text=Emma').count(), 1);
+  // explicit voice choice wins
+  await page.selectOption('select[data-input=voice]', 'daniel');
+  last = await page.evaluate(() => window.__spoken.at(-1));
+  assert.equal(last.voice, 'Daniel');
+  assert.ok(await page.locator('optgroup[label*="British"]').count() === 1);
+  assert.equal(await page.locator('option', { hasText: 'Zarvox' }).count(), 0, 'novelty voices hidden');
+  await shot(page, '11-tutors');
+
+  chatQueue.push({ status: 200, body: { reply: 'Hello Dad, lovely to meet you! Fancy a chat about holidays?', fixes: [] } });
+  await page.click('text=← Back');
+  await page.waitForSelector('.tutor-card >> text=Emma');
+  await page.click('.mode-card:has-text("Free Talk")');
+  await page.click('.pick:has-text("Travel")');
+  await page.waitForSelector('text=Fancy a chat about holidays?');
+  const req = chatRequests.at(-1);
+  assert.equal(req.tutor.name, 'Emma');
+  assert.equal(req.tutor.accent, 'gb');
+  assert.equal(await page.evaluate(() => window.__spoken.at(-1).voice), 'Daniel');
+  assert.equal(await page.locator('.msg.buddy .avatar >> text=👩‍🏫').count(), 1);
 });
 
 await step('no speech recognition: falls back to typing', async () => {

@@ -136,3 +136,32 @@ export const BADGES = [
   { id: 'actor', emoji: '🎭', name: 'Little Actor', desc: 'Tried a role play', test: (s) => (s.modes.roleplay || 0) >= 1 },
   { id: 'stars100', emoji: '💫', name: '100 Stars', desc: 'Collected 100 stars', test: (s) => s.stars >= 100 },
 ];
+
+// Accents: `lang` is the speech-voice language code used to find matching voices on the device.
+export const ACCENTS = [
+  { id: 'us', label: 'American', flag: '🇺🇸', lang: 'en-US' },
+  { id: 'gb', label: 'British', flag: '🇬🇧', lang: 'en-GB' },
+  { id: 'au', label: 'Australian', flag: '🇦🇺', lang: 'en-AU' },
+  { id: 'in', label: 'Indian', flag: '🇮🇳', lang: 'en-IN' },
+  { id: 'ie', label: 'Irish', flag: '🇮🇪', lang: 'en-IE' },
+  { id: 'ca', label: 'Canadian', flag: '🇨🇦', lang: 'en-CA' },
+  { id: 'za', label: 'South African', flag: '🇿🇦', lang: 'en-ZA' },
+  { id: 'nz', label: 'New Zealand', flag: '🇳🇿', lang: 'en-NZ' },
+  { id: 'sc', label: 'Scottish', flag: '🏴󠁧󠁢󠁳󠁣󠁴󠁿', lang: 'en-GB-SCOTLAND' },
+];
+
+// Tutor characters. Each has a name, an accent, a voice gender and a personality.
+export const TUTORS = [
+  { id: 'buddy', name: 'Buddy', emoji: '🤖', accent: 'us', gender: 'any', bio: 'A cheerful robot friend who loves words and jokes.', personality: 'a cheerful, playful robot friend who loves words, animals and silly (kind) jokes' },
+  { id: 'emma', name: 'Emma', emoji: '👩‍🏫', accent: 'gb', gender: 'female', bio: 'A kind teacher from London who loves books and tea.', personality: 'a kind, patient primary-school teacher from London who loves reading, baking and walks in the park' },
+  { id: 'oliver', name: 'Oliver', emoji: '👨‍🏫', accent: 'gb', gender: 'male', bio: 'A friendly teacher from Manchester who loves football.', personality: 'a friendly, upbeat teacher from Manchester who loves football, cooking and travelling by train' },
+  { id: 'lily', name: 'Lily', emoji: '👩', accent: 'us', gender: 'female', bio: 'A fun teacher from California who loves the beach.', personality: 'an energetic, warm teacher from California who loves the beach, drawing and her dog Max' },
+  { id: 'jack', name: 'Jack', emoji: '🧑', accent: 'us', gender: 'male', bio: 'A relaxed coach from New York who loves basketball.', personality: 'a relaxed, encouraging coach from New York who loves basketball, music and trying new food' },
+  { id: 'chloe', name: 'Chloe', emoji: '👱‍♀️', accent: 'au', gender: 'female', bio: 'A sunny teacher from Sydney who loves animals.', personality: 'a sunny, easy-going teacher from Sydney who loves animals (especially koalas), swimming and camping' },
+  { id: 'priya', name: 'Priya', emoji: '👩🏽', accent: 'in', gender: 'female', bio: 'A gentle teacher from Bangalore who loves stories.', personality: 'a gentle, encouraging teacher from Bangalore who loves stories, festivals, cricket and cooking' },
+  { id: 'sean', name: 'Seán', emoji: '🧔', accent: 'ie', gender: 'male', bio: 'A storyteller from Dublin who loves music.', personality: 'a funny, warm storyteller from Dublin who loves music, hiking and old legends' },
+  { id: 'thandi', name: 'Thandi', emoji: '👩🏾', accent: 'za', gender: 'female', bio: 'A bright teacher from Cape Town who loves nature.', personality: 'a bright, caring teacher from Cape Town who loves nature, the ocean, singing and wildlife' },
+];
+
+export const tutorById = (id) => TUTORS.find((t) => t.id === id) || TUTORS[0];
+export const accentById = (id) => ACCENTS.find((a) => a.id === id) || ACCENTS[0];

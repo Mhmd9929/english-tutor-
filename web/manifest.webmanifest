@@ -1,7 +1,7 @@
 {
-  "name": "English Buddy",
+  "name": "Buddy Learning",
   "short_name": "Buddy",
-  "description": "A friendly voice-based English tutor for the whole family.",
+  "description": "English, Maths, Science and Arabic games for FS1 to Year 1, plus a voice tutor for the whole family.",
   "id": "./",
   "start_url": "./",
   "scope": "./",
@@ -9,10 +9,28 @@
   "orientation": "portrait",
   "background_color": "#7c5cff",
   "theme_color": "#7c5cff",
-  "categories": ["education", "kids"],
+  "categories": [
+    "education",
+    "kids"
+  ],
   "icons": [
-    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
-    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
-    { "src": "icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
   ]
 }

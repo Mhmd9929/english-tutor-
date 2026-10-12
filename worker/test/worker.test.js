@@ -79,7 +79,8 @@ test('chat: happy path with Gemini, system prompt and history', async () => {
   const call = calls[0];
   assert.match(call.url, /gemini-flash-lite-latest:generateContent$/);
   assert.equal(call.headers['x-goog-api-key'], 'test-gemini');
-  assert.match(call.body.systemInstruction.parts[0].text, /You are "Buddy"/);
+  assert.match(call.body.systemInstruction.parts[0].text, /BE A REAL TEACHER/);
+  assert.match(call.body.systemInstruction.parts[0].text, /Your name is Buddy/);
   assert.match(call.body.systemInstruction.parts[0].text, /First name: Mia/);
   assert.equal(call.body.generationConfig.maxOutputTokens, 250);
   assert.equal(call.body.contents[0].role, 'user'); // synthetic session start
@@ -227,6 +228,21 @@ test('postProcess strips links, markdown and fix tags', () => {
   assert.deepEqual(fixes, [{ wrong: 'he go', right: 'he goes' }]);
 });
 
+test('tutor name, accent, personality and interests reach the prompt', async () => {
+  await worker.fetch(chatRequest({
+    tutor: { name: 'Emma', accent: 'gb', personality: 'a kind teacher from London' },
+    profile: { id: 'p_mia', name: 'Mia', age: 7, level: 'Beginner', interests: 'cats, drawing' },
+  }), makeEnv());
+  const sys = calls[0].body.systemInstruction.parts[0].text;
+  assert.match(sys, /Your name is Emma\. You are a kind teacher from London/);
+  assert.match(sys, /British English/);
+  assert.match(sys, /enjoys: cats, drawing/);
+  // unknown accents fall back to American, and odd characters are stripped
+  const p = buildDynamicPrompt({ profile: { name: 'Bo' }, tutor: { name: 'X]\n[fix', accent: 'mars' } });
+  assert.match(p, /American English/);
+  assert.doesNotMatch(p, /\[fix/);
+});
+
 test('dynamic prompt adapts to age, level and mode', () => {
   const kid = buildDynamicPrompt({ profile: { name: 'Mia', age: 6, level: 'Beginner' }, mode: 'words', words: ['brave', 'cloud'] });
   assert.match(kid, /child/);
@@ -235,4 +251,26 @@ test('dynamic prompt adapts to age, level and mode', () => {
   assert.match(adult, /adult/);
   assert.match(adult, /check-in agent/);
   assert.ok(STATIC_PROMPT.length > 2500, 'static prompt should be long enough to be cached by Claude (>512 tokens)');
+});
+
+test('kids mode: year group, short replies, Arabic option', async () => {
+  await worker.fetch(chatRequest({ mode: 'kids', lang: 'ar', profile: { id: 'p_k', name: 'Layla', age: 4, year: 'FS2' } }), makeEnv());
+  const call = calls[0];
+  const sys = call.body.systemInstruction.parts[0].text;
+  assert.match(sys, /Your name is Buddy/);
+  assert.match(sys, /FS2 \(Reception/);
+  assert.match(sys, /Modern Standard Arabic/);
+  assert.match(sys, /never add \[fix\] tags/);
+  assert.equal(call.body.generationConfig.maxOutputTokens, 150);
+  assert.match(call.body.contents[0].parts[0].text, /Talk to Buddy/);
+});
+
+test('cheer mode: one sentence of praise about the game', async () => {
+  mockFetch(() => geminiOk('Wow, Layla, you counted brilliantly!'));
+  const res = await worker.fetch(chatRequest({ mode: 'cheer', lang: 'en', activity: { topic: 'Count to 10', stars: 3, firstTry: 5, total: 5 }, profile: { id: 'p_k', name: 'Layla', year: 'FS1' } }), makeEnv());
+  const data = await res.json();
+  assert.equal(data.reply, 'Wow, Layla, you counted brilliantly!');
+  const sys = calls[0].body.systemInstruction.parts[0].text;
+  assert.match(sys, /"Count to 10" and got 5 out of 5/);
+  assert.equal(calls[0].body.generationConfig.maxOutputTokens, 80);
 });

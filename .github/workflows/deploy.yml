@@ -34,7 +34,11 @@ jobs:
           cache: npm
           cache-dependency-path: worker/package-lock.json
       - run: npm ci
-      - run: npm test
+      - name: Test the Worker
+        run: npm test
+      - name: Test the learning question banks
+        working-directory: web
+        run: node --test test/banks.test.mjs
 
   worker:
     name: Deploy Worker (Cloudflare)

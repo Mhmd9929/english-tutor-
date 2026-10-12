@@ -1,5 +1,6 @@
 // Talks to the English Buddy Cloudflare Worker.
 import { get, timeZone } from './store.js';
+import { tutorById } from './content.js';
 
 export class ApiError extends Error {
   // type: 'rate' | 'daily' | 'auth' | 'locked' | 'network' | 'config' | 'server'
@@ -45,14 +46,32 @@ async function request(path, { method = 'GET', body, code } = {}) {
 }
 
 export function chat({ profile, mode, topic, words, messages }) {
+  const t = tutorById(profile.tutorId);
   return request('/chat', {
     method: 'POST',
     body: {
-      profile: { id: profile.id, name: profile.name, age: profile.age, level: profile.level },
+      profile: { id: profile.id, name: profile.name, age: profile.age, level: profile.level, interests: profile.interests || '', year: profile.year || '' },
+      lang: mode === 'kids' && topic === 'ar' ? 'ar' : 'en',
+      tutor: { name: t.name, accent: t.accent, personality: t.personality },
       dailyLimit: profile.dailyLimit,
       mode, topic, words,
       tz: timeZone(),
       messages: messages.slice(-12),
+    },
+  });
+}
+
+/** One short spoken encouragement after a learning game (optional; the app works without it). */
+export function cheer({ profile, topic, stars, firstTry, total, lang }) {
+  return request('/chat', {
+    method: 'POST',
+    body: {
+      profile: { id: profile.id, name: profile.name, age: profile.age, level: 'Beginner', year: profile.year || '' },
+      dailyLimit: profile.dailyLimit,
+      mode: 'cheer', lang,
+      activity: { topic: String(topic).slice(0, 60), stars, firstTry, total },
+      tz: timeZone(),
+      messages: [],
     },
   });
 }
