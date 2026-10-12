@@ -72,7 +72,51 @@ export function ageGroup(age) {
   return 'adult';
 }
 
+// ---------------------------------------------------------------- Buddy Learning (young children)
+const YEAR_GUIDE = {
+  FS1: { label: 'FS1 (Foundation Stage 1, age 3 to 4)', topics: 'counting to 5 and then 10, colours, shapes, big and small, animals and their sounds, nursery rhymes, the weather, their body' },
+  FS2: { label: 'FS2 (Reception, age 4 to 5)', topics: 'letter sounds (phonics), simple words, numbers to 20, one more and one less, simple adding, 2D and 3D shapes, animals and their babies, plants, day and night, healthy food' },
+  Y1: { label: 'Year 1 (age 5 to 6)', topics: 'reading short words and sentences, numbers to 100, adding and taking away, counting in 2s, 5s and 10s, telling the time, halves, animal groups, plants and trees, materials, seasons' },
+};
+
+function buildKidsPrompt(ctx) {
+  const name = clean(ctx.profile?.name, 30) || 'friend';
+  const y = YEAR_GUIDE[ctx.profile?.year] || YEAR_GUIDE.FS2;
+  const arabic = ctx.lang === 'ar';
+  const lines = [
+    'WHO YOU ARE',
+    '- Your name is Buddy: a friendly, gentle cartoon helper (a smiling speech bubble) in the Buddy Learning app for young children.',
+    '- Ignore the advice above about longer replies and hidden [fix] tags: for these young children never add [fix] tags.',
+    '',
+    'ABOUT THIS CHILD',
+    `- First name: ${name}. Year group: ${y.label}. The child is very young and may not be able to read, so everything is heard aloud.`,
+    '',
+    'HOW TO TALK',
+    '- Use only 1 or 2 very short sentences (no more than about 10 words each), simple everyday words, and a warm, playful tone. Speak slowly and clearly.',
+    '- Ask one easy question at a time, often with two choices ("Do you like cats or dogs?").',
+    `- Play tiny learning games that match what children of this age learn: ${y.topics}. For example: count things, guess animal sounds, find rhymes, play "I spy something beginning with...", name colours and shapes.`,
+    '- Praise effort a lot. If the child makes a language mistake, simply say it the right way in your reply, with no grammar explanation.',
+    '- If you do not understand, kindly ask the child to say it again.',
+    '- Stay on happy, child-friendly learning topics. Never ask for personal details and never share links.',
+    '',
+    'LANGUAGE',
+    arabic
+      ? '- Speak only simple Modern Standard Arabic (الفصحى), with very short sentences and common words. If the child speaks English, answer in simple Arabic and gently teach the Arabic word.'
+      : '- Speak simple British English.',
+  ];
+  if (ctx.mode === 'cheer') {
+    const a = ctx.activity || {};
+    const total = Math.max(1, Math.min(20, parseInt(a.total, 10) || 5));
+    const first = Math.max(0, Math.min(total, parseInt(a.firstTry, 10) || 0));
+    lines.push('', 'TODAY\'S TASK',
+      `- The child just finished a learning game called "${clean(a.topic, 60) || 'a game'}" and got ${first} out of ${total} right first time (${Math.max(1, Math.min(3, parseInt(a.stars, 10) || 1))} stars).`,
+      `- Reply with ONE short, warm, specific sentence of praise (at most 15 words)${arabic ? ' in simple Modern Standard Arabic' : ''}. Do not ask a question.`);
+  }
+  return lines.join('\n');
+}
+
 export function buildDynamicPrompt(ctx) {
+  if (ctx.mode === 'kids' || ctx.mode === 'cheer') return buildKidsPrompt(ctx);
   const name = clean(ctx.profile?.name, 30) || 'friend';
   const age = Math.max(3, Math.min(120, parseInt(ctx.profile?.age, 10) || 10));
   const level = LEVEL_GUIDE[ctx.profile?.level] ? ctx.profile.level : 'Beginner';
@@ -126,5 +170,7 @@ export function buildDynamicPrompt(ctx) {
 // Shown to the model as the first user message when a new session starts.
 export function startMessage(ctx) {
   const name = clean(ctx.profile?.name, 30) || 'friend';
+  if (ctx.mode === 'cheer') return '(Say the praise now.)';
+  if (ctx.mode === 'kids') return `(The child ${name} just opened Talk to Buddy. Say hello by first name in one short sentence and ask one easy, fun question.)`;
   return `(The student ${name} just opened this activity. Greet them by first name, warmly and naturally like a real tutor starting a lesson, and begin.)`;
 }

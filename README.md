@@ -1,14 +1,41 @@
-# English Buddy 💬
+# Buddy Learning 🧸
 
-**English Buddy** is a voice-based English tutor app for the whole family. You talk to **Buddy**, a friendly AI tutor. Buddy answers out loud, gently corrects mistakes and keeps the conversation going. It works on iPhone and Android, and you can install it on your home screen like a normal app.
+**Buddy Learning** is a learning app for young children from **FS1 to Year 1 (ages 3 to 6)**. It follows the British **EYFS** (FS1 and FS2) and the **Year 1 National Curriculum**. It has four subjects: **English, Maths, Science and Arabic**. **Buddy**, a friendly talking speech bubble, explains everything out loud, so children don't need to read.
 
-- 🎤 **Hold the mic button and talk.** Buddy answers out loud and also shows the text, with a 🔊 replay button.
-- 👨‍👩‍👧 **Family profiles:** name, avatar, age and English level (Beginner, Elementary, Intermediate or Advanced). Buddy changes its words, sentence length and speaking speed for each person.
+It also keeps **English Buddy**, the voice tutor for older children and grown-ups, so the whole family can use one app. It works on iPhone and Android, and installs on your home screen like a normal app.
+
+## ✨ What's new
+
+- 🏠 **A home screen made for little hands:** four big subject tiles (🔤 English, 🔢 Maths, 🔬 Science, 🌙 العربية) and **Talk to Buddy**.
+- 🔊 **Audio first:** every instruction and question is spoken aloud, with a big yellow **🔊 hear again** button. Children who can't read yet can still play.
+- 👆 **Tap, drag and trace:** picture choices, drag-and-drop sorting, putting things in order, and tracing letters with a finger.
+- 🌟 **Short and happy:** each game has 4 to 6 questions, then stars ⭐, a new sticker 🏅 and a celebration. Buddy never says "wrong". It says **"Let's try again!"** and gives a hint. After two tries, the right answer gently glows.
+- 🎓 **Year groups:** each child is set to **FS1, FS2 or Year 1**. Topics match that year, and every topic adjusts itself: it gets harder after a great game and easier if a game was tricky.
+- 📚 **Built-in lessons, no AI needed:** 62 topics with at least 30 different questions each. All games work offline and cost nothing to run.
+- 🌙 **Arabic (Modern Standard Arabic):** right-to-left screens, spoken with an Arabic voice (UAE or Saudi when your phone has one), with optional English help.
+- 💬 **Talk to Buddy:** a voice chat in **English or Arabic** with very short, simple sentences for young children.
+- 👨‍👩‍👧 **Parent area (PIN protected):** time spent, stars, progress per subject and topic, strengths, topics to practise, Buddy chats, a **weekly summary with charts**, and settings for daily screen time (default 20 minutes), subjects, year group and voice speed.
+- ⏰ **"Time to rest!"** When today's screen time is used up, your child sees a sleepy Buddy. Only a parent PIN can add more time.
+
+### What's inside each subject
+
+| | FS1 (age 3–4) | FS2 (age 4–5) | Year 1 (age 5–6) |
+|---|---|---|---|
+| 🔤 **English** | listening games, rhymes, first sounds, animal and object names | Phase 2 and 3 sounds, letter–sound matching, blending CVC words, Phase 4 words, tricky words, letter tracing | Phase 5 sounds, reading sentences, story questions, building sentences, tracing, tricky words |
+| 🔢 **Maths** | counting to 5 then 10, matching numbers, shapes, colours, big and small, patterns | numbers to 20, one more and one less, adding and taking away with pictures, 2D and 3D shapes, more or fewer, patterns | numbers to 100, adding and subtracting within 20, counting in 2s, 5s and 10s, halves and quarters, telling the time (o'clock, half past), money in **UAE dirhams**, measuring |
+| 🔬 **Science** | animal homes and babies, my body, five senses, weather, day and night, growing, healthy food | (same topics, with harder questions and sorting games) | animal groups, what animals eat, our bodies, plants and trees, materials, seasons |
+| 🌙 **Arabic** | letter sounds, colours, numbers 1–10, family and animal words | all 28 letters with pictures, letter tracing, short vowels (fatha, kasra, damma), Arabic numbers, colours, numbers, family and animals | letter shapes (beginning, middle, end), long vowels, reading words and short sentences, everyday words, letters, tracing, short vowels |
+
+### For older children and grown-ups (English Buddy)
+
+Choose the **"Older"** year group for a profile to get the English Buddy voice tutor:
+
+- 🎤 **Hold the mic button and talk.** The tutor answers out loud and also shows the text, with a 🔊 replay button.
 - 🎯 **5 practice modes:** Free Talk, Role Play, Word of the Day, Story Time and Pronunciation.
+- 🗣️ **Tutor characters and accents:** British, American, Australian, Indian, Irish and South African.
 - ⭐ **Progress:** stars, badges, streaks, minutes practised, words learned and common mistakes.
-- 🔒 **Parents area with a PIN:** progress for each person, recent conversations and daily limits.
-- 🛡️ **Safe for kids:** Buddy stays on English learning, never asks for personal details and never shares links.
-- 💸 **Free to run:** it uses Google Gemini's free tier, Cloudflare's free plan and GitHub Pages.
+
+**Safe for kids:** Buddy stays on learning, never asks for personal details and never shares links. **Free to run:** it uses Google Gemini's free tier, Cloudflare's free plan and GitHub Pages.
 
 ---
 
@@ -98,24 +125,67 @@ You can also find the link here:
 1. Open the app link in **Safari**. This must be Safari, not Chrome.
 2. Tap the **Share** button (the square with an arrow ⬆️).
 3. Scroll down and tap **Add to Home Screen**, then **Add**.
-4. Open **English Buddy** from your home screen. The first time you talk, allow microphone access.
+4. Open **Buddy Learning** from your home screen. The first time you talk, allow microphone access.
 
 **Android**
 1. Open the app link in **Chrome**.
 2. Tap **Install app** if a banner appears. Otherwise tap the **⋮** menu, then **Install app** (or **Add to Home screen**).
-3. Open **English Buddy** from your home screen and allow microphone access.
+3. Open **Buddy Learning** from your home screen and allow microphone access.
 
 ### Step 9: First start
 
 1. Tap **Let's start!** and type the **family code**.
-2. Create a profile for the first learner.
-3. Open the **Parents** tab and create a **parent PIN** (4–8 digits). There you can add more family members, set daily limits, choose Buddy's voice and read conversations.
+2. Create a profile for the first learner. Choose **FS1, FS2 or Year 1** for young children (Buddy Learning) or **Older** for the English tutor.
+3. Open the **Parents** tab and create a **parent PIN** (4–8 digits). There you can add more family members, set daily limits and screen time, choose subjects and read conversations.
 
 🎉 That's it!
 
 ---
 
-## Using the app
+## Using Buddy Learning with your child
+
+1. **Create a child profile:** Parents tab → **➕ Add family member** (or the profile button at the top → **Add**). Choose the year group: **FS1** (ages 3–4), **FS2** (ages 4–5) or **Year 1** (ages 5–6). Young children don't need an age or level.
+2. **Hand over the phone.** Buddy says hello. Your child taps a big subject tile, then a game picture.
+3. **In a game:**
+   - Buddy reads the question aloud. Tap the yellow **🔊** to hear it again.
+   - Counting questions: tap each object to count it out loud.
+   - Sorting games: drag each picture into the right box (or tap a picture, then tap a box).
+   - Ordering games: tap the pictures or words in the right order. Tap a placed one to take it back.
+   - Tracing: follow the grey letter with a finger. **🔄 Start again** clears it.
+   - The **✕** at the top leaves the game.
+4. **After each game:** stars (1 to 3) and a new sticker. Stickers are in the **🏅 Stickers** tab.
+5. **Talk to Buddy:** tap the purple **Talk to Buddy** tile (or the **💬 Buddy** tab). Hold the big button and speak. Switch between **English** and **العربية** at the top.
+
+> 🔈 **Sound tips:** turn the volume up and switch off silent mode. For the best Arabic voice: on iPhone, go to Settings → Accessibility → Spoken Content → Voices → Arabic and download a voice. On Android, go to Settings → Accessibility → Text-to-speech → Speech Services by Google → ⚙️ → Install voice data → Arabic. If there is no Arabic voice, the phone may read Arabic with a different voice, and the text is always shown too.
+
+## The parent area
+
+Tap **👨‍👩‍👧 Parents** and enter your PIN. You create the PIN the first time. For each child you see:
+
+- **Today:** minutes used out of the daily limit, and stars earned.
+- **Totals:** minutes, stars, stickers and the day streak.
+- **Progress per subject:** how many of this year's topics your child has tried, and how often they answered correctly on the first try.
+- **💪 Strengths** (topics with 80% or more correct on the first try) and **🌱 Needs practice** (below 60%).
+- **📊 Weekly summary:** charts of minutes and stars for each of the last 7 days, time per subject, and a table of this week's topics with their level (1 to 3). Hover or tap a bar to see its number. There is also a plain table view.
+- **💬 Buddy chats:** recent Talk to Buddy conversations.
+- **⚙️ Settings:**
+  - **Year group:** FS1, FS2 or Year 1, or Older for the English Buddy tutor.
+  - **Daily screen time:** default 20 minutes. When it runs out, your child sees **"Time to rest!"**. To give extra time, open **Grown-ups** on that screen and enter your PIN to add 10 minutes for today.
+  - **Subjects:** turn English, Maths, Science, Arabic or Talk to Buddy on or off.
+  - **Voice speed:** slower is better for the youngest children.
+  - **Say Arabic instructions in English too:** on by default.
+  - **Buddy AI cheers after games:** a short spoken "well done" from the AI after each game. It uses the internet and counts towards the daily AI message limit. Games work without it.
+  - **Daily AI message limit:** for Talk to Buddy.
+
+Leaving the Parents tab locks it again. Everything is stored **only on this phone**. Each phone keeps its own profiles and progress.
+
+**How topics adjust:** every topic has 3 levels. A game with 85% or more correct on the first try moves the topic up a level. A game with 50% or less moves it down. Parents see the level in the weekly summary.
+
+---
+
+## Using English Buddy (older learners)
+
+This section is for profiles set to the **Older** year group.
 
 | Mode | What happens |
 |---|---|
@@ -211,6 +281,10 @@ To go back to Gemini, change `AI_PROVIDER` to `gemini` and run the workflow agai
 | **No sound** from Buddy | Turn the volume up and switch off silent mode (iPhone side switch). Then tap 🔊 on a message. In Parents → Settings you can choose another voice. |
 | Buddy's voice sounds robotic | In Parents → Settings, choose a different voice. On iPhone you can download better voices in **Settings → Accessibility → Spoken Content → Voices → English** (look for "Enhanced" or "Premium"). |
 | **Forgot the parent PIN** | The PIN is stored only on that phone. Clear the website's data (iPhone: Settings → Safari → Advanced → Website Data; Android: Chrome → Settings → Site settings). This also deletes that phone's profiles and progress. |
+| Arabic is read with an English-sounding voice, or not at all | The phone has no Arabic voice. Install one (see the **Sound tips** above). On a computer, Microsoft Edge has Arabic voices. |
+| **"Time to rest!"** appears | Today's screen time is used up. Open **Grown-ups** on that screen and enter the parent PIN for 10 more minutes, or change **Daily screen time** in Parents → ⚙️ Settings. |
+| Games don't open without internet | Open the app once while online, so it can save the games on the phone. After that, all games work offline. Only Talk to Buddy and the AI cheers need the internet. |
+| My child sees the wrong topics | Check the year group in Parents → ⚙️ Settings. |
 | The app didn't update after a change | Close the app completely and open it again, maybe twice. |
 
 ---
@@ -235,20 +309,28 @@ web/                 the app (plain HTML/CSS/JS, no build step)
   js/speech.js       Web Speech API (listening + speaking)
   js/diff.js         pronunciation comparison
   js/store.js        local storage: profiles, progress, transcripts
-  js/content.js      topics, word lists, sentences, badges
+  js/content.js      English Buddy topics, word lists, sentences, badges, tutors
+  js/kids.js         Buddy Learning screens: home, subjects, results, stickers, rest, parent views, weekly charts
+  js/learn/core.js   subjects, year groups, the topic catalogue, random helpers
+  js/learn/engine.js runs a game: choice, drag-and-drop sorting, ordering, finger tracing, celebrations
+  js/learn/visuals.js SVG pictures: Buddy, shapes, clocks, UAE coins, fractions, scales, plant
+  js/learn/english.js, maths.js, science.js, arabic.js   question banks (loaded only when needed)
+  test/banks.test.mjs checks every topic: valid questions and 30+ different items per level
 worker/              Cloudflare Worker
   src/index.js       routes, family code, CORS, limits
   src/prompt.js      Buddy's system prompt (shared by both providers)
   src/providers.js   Gemini + Claude calls
   src/limiter.js     Durable Object: daily counts + rate limiting
   test/              unit tests (npm test)
-tests/e2e.mjs        browser test of the main flows (Playwright)
+tests/e2e.mjs        browser test of the English Buddy flows (Playwright)
+tests/kids-e2e.mjs   browser test of Buddy Learning: every topic in every year group, drag, trace, rest screen, parent area
 tools/make-icons.mjs regenerates icons and splash screens
 .github/workflows/deploy.yml   test → deploy Worker → publish Pages
 ```
 
 - Worker tests: `cd worker && npm ci && npm test`
 - Run the Worker locally: create `worker/.dev.vars` with `FAMILY_CODE=...`, `GEMINI_API_KEY=...` and `ALLOWED_ORIGIN=http://localhost:5173`. Then run `npx wrangler dev`. Serve `web/` on port 5173 and set `workerUrl` in `web/config.js` to `http://localhost:8787`.
-- Browser tests: `node tests/e2e.mjs` (needs `playwright` installed). The Worker, microphone and voice are simulated.
-- Worker API: `GET /health`, `GET /usage` and `POST /chat` (the last two need the `X-Family-Code` header and an allowed `Origin`).
+- Question bank tests: `node --test web/test/banks.test.mjs` (no install needed; these also run in GitHub Actions).
+- Browser tests: `node tests/e2e.mjs` and `node tests/kids-e2e.mjs` (need `playwright` installed). The Worker, microphone and voices are simulated.
+- Worker API: `GET /health`, `GET /usage` and `POST /chat` (the last two need the `X-Family-Code` header and an allowed `Origin`). Chat modes: `free`, `roleplay`, `words`, `story` (older learners), `kids` (Talk to Buddy, with `lang` set to `en` or `ar`) and `cheer` (one sentence of praise after a game).
 - Replies are capped at about 250 tokens (350 for the opening of a story). Only the last 12 messages are sent. Rate-limit errors from the provider come back as HTTP 429, and the app shows "Buddy needs a short break" and then retries once automatically.

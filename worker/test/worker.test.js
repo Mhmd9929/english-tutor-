@@ -252,3 +252,25 @@ test('dynamic prompt adapts to age, level and mode', () => {
   assert.match(adult, /check-in agent/);
   assert.ok(STATIC_PROMPT.length > 2500, 'static prompt should be long enough to be cached by Claude (>512 tokens)');
 });
+
+test('kids mode: year group, short replies, Arabic option', async () => {
+  await worker.fetch(chatRequest({ mode: 'kids', lang: 'ar', profile: { id: 'p_k', name: 'Layla', age: 4, year: 'FS2' } }), makeEnv());
+  const call = calls[0];
+  const sys = call.body.systemInstruction.parts[0].text;
+  assert.match(sys, /Your name is Buddy/);
+  assert.match(sys, /FS2 \(Reception/);
+  assert.match(sys, /Modern Standard Arabic/);
+  assert.match(sys, /never add \[fix\] tags/);
+  assert.equal(call.body.generationConfig.maxOutputTokens, 150);
+  assert.match(call.body.contents[0].parts[0].text, /Talk to Buddy/);
+});
+
+test('cheer mode: one sentence of praise about the game', async () => {
+  mockFetch(() => geminiOk('Wow, Layla, you counted brilliantly!'));
+  const res = await worker.fetch(chatRequest({ mode: 'cheer', lang: 'en', activity: { topic: 'Count to 10', stars: 3, firstTry: 5, total: 5 }, profile: { id: 'p_k', name: 'Layla', year: 'FS1' } }), makeEnv());
+  const data = await res.json();
+  assert.equal(data.reply, 'Wow, Layla, you counted brilliantly!');
+  const sys = calls[0].body.systemInstruction.parts[0].text;
+  assert.match(sys, /"Count to 10" and got 5 out of 5/);
+  assert.equal(calls[0].body.generationConfig.maxOutputTokens, 80);
+});

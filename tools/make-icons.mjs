@@ -54,7 +54,7 @@ for (const [w, h] of splashes) {
   await png(`splash-${w}x${h}.png`, w, h, `
     <div style="width:${w}px;height:${h}px;background:linear-gradient(160deg,#8f74ff,#5b3df5);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:${w * 0.05}px;font-family:system-ui,sans-serif;color:#fff">
       <div style="width:${s}px;height:${s}px;border-radius:${s * 0.24}px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.25)">${buddy(true, 0).replace('<svg ', `<svg width="${s}" height="${s}" `)}</div>
-      <div style="font-size:${w * 0.075}px;font-weight:800">English Buddy</div>
+      <div style="font-size:${w * 0.075}px;font-weight:800">Buddy Learning</div>
     </div>`);
 }
 await browser.close();

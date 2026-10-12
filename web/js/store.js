@@ -64,12 +64,13 @@ export function defaultRate(age) {
   return 0.95;
 }
 
-export function addProfile({ name, avatar, age, level, tutorId = 'buddy', interests = '' }) {
+export function addProfile({ name, avatar, age, level, tutorId = 'buddy', interests = '', year = 'older' }) {
   const p = {
     id: uid('p'), name: name.trim().slice(0, 20), avatar, age: Number(age) || 8, level,
     rate: defaultRate(age), dailyLimit: 60, createdAt: Date.now(),
-    tutorId, voiceURI: '', interests: String(interests).slice(0, 160),
+    tutorId, voiceURI: '', interests: String(interests).slice(0, 160), year,
   };
+  if (isKid(p)) kidDefaults(p);
   state.profiles.push(p);
   state.activeProfileId = p.id;
   save();
@@ -263,4 +264,100 @@ export async function hashPin(pin) {
   let h = 0;
   for (const b of data) h = (h * 31 + b) >>> 0;
   return `x${h.toString(16)}`;
+}
+
+// ================================================================ Buddy Learning (young children)
+export const STICKERS = ['🦄', '🦖', '🚀', '🌈', '🐙', '🦋', '🍩', '🎈', '🐬', '🦁', '🐼', '🌻', '🍉', '🚂', '⚽', '🎨', '🧁', '🐢', '🦊', '🌟',
+  '🐳', '🍭', '🛸', '🦕', '🏰', '🎠', '🐝', '🍓', '🦒', '🐧', '🐞', '🪁', '🎪', '🍦', '🐨', '🌙', '🦜', '🧸', '🎁', '🐠'];
+export const KID_SUBJECTS = ['english', 'maths', 'science', 'arabic', 'talk'];
+
+export const isKid = (p) => ['FS1', 'FS2', 'Y1'].includes(p?.year);
+
+/** Fills in Buddy Learning settings for a child profile (safe to call many times). */
+export function kidDefaults(p) {
+  if (!p) return p;
+  if (p.minutes == null) p.minutes = 20;
+  if (!p.subjects) p.subjects = Object.fromEntries(KID_SUBJECTS.map((s) => [s, true]));
+  if (p.arHelper == null) p.arHelper = true;
+  if (p.aiCheer == null) p.aiCheer = true;
+  return p;
+}
+
+export function learn(id) {
+  const pr = progress(id);
+  if (!pr.learn) pr.learn = { topics: {}, stickers: [], bonus: {} };
+  return pr.learn;
+}
+
+export function topicStats(id, topicId) {
+  const l = learn(id);
+  if (!l.topics[topicId]) l.topics[topicId] = { level: 1, plays: 0, correct: 0, total: 0, best: 0, last: 0, history: [] };
+  return l.topics[topicId];
+}
+
+/**
+ * Saves an activity result. Adapts the topic level: 85%+ moves up, 50% or less moves down.
+ * Returns { stars (1-3), sticker, levelUp, levelDown }.
+ */
+export function recordActivity(id, topic, { firstTry, total }) {
+  const t = topicStats(id, topic.id);
+  const ratio = total ? firstTry / total : 0;
+  const stars = ratio >= 0.85 ? 3 : ratio >= 0.5 ? 2 : 1;
+  t.plays += 1;
+  t.correct += firstTry;
+  t.total += total;
+  t.best = Math.max(t.best, stars);
+  t.last = Date.now();
+  t.history = [...(t.history || []), Math.round(ratio * 100)].slice(-10);
+  let levelUp = false;
+  let levelDown = false;
+  if (ratio >= 0.85 && t.level < 3) { t.level += 1; levelUp = true; } else if (ratio <= 0.5 && t.level > 1) { t.level -= 1; levelDown = true; }
+  const pr = progress(id);
+  pr.stars += stars;
+  const day = dayEntry(pr);
+  day.stars = (day.stars || 0) + stars;
+  day.acts = (day.acts || 0) + 1;
+  day.subjects = day.subjects || {};
+  const l = learn(id);
+  const free = STICKERS.filter((s) => !l.stickers.includes(s));
+  const sticker = free.length ? free[Math.floor(Math.random() * free.length)] : STICKERS[Math.floor(Math.random() * STICKERS.length)];
+  l.stickers.push(sticker);
+  save();
+  return { stars, sticker, levelUp, levelDown, ratio };
+}
+
+export function addSubjectSeconds(id, subject, secs) {
+  const day = dayEntry(progress(id));
+  day.subjects = day.subjects || {};
+  day.subjects[subject] = (day.subjects[subject] || 0) + secs;
+  save();
+}
+
+export const todaySeconds = (id) => progress(id).days[today()]?.secs || 0;
+
+/** Daily screen-time limit in seconds (including any extra time a parent added today). */
+export function limitSeconds(p) {
+  kidDefaults(p);
+  const bonus = learn(p.id).bonus?.[today()] || 0;
+  return (Number(p.minutes) || 20) * 60 + bonus * 60;
+}
+export function addBonusMinutes(id, mins) {
+  const l = learn(id);
+  l.bonus = l.bonus || {};
+  l.bonus[today()] = (l.bonus[today()] || 0) + mins;
+  save();
+}
+
+/** Last 7 days for the weekly summary. */
+export function week(id) {
+  const pr = progress(id);
+  const out = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    const k = today(d);
+    const e = pr.days[k] || {};
+    out.push({ date: k, d, mins: Math.round((e.secs || 0) / 60), stars: e.stars || 0, acts: e.acts || 0, subjects: e.subjects || {} });
+  }
+  return out;
 }

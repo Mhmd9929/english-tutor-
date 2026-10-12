@@ -1,8 +1,11 @@
-// English Buddy - main app (screens, navigation, conversation flow).
+// Buddy Learning (formerly English Buddy) - main app: screens, navigation, conversations.
+// Young children (FS1, FS2, Year 1) get the Buddy Learning screens from kids.js;
+// older learners and adults keep the English tutor screens below.
 import * as store from './store.js';
 import * as api from './api.js';
 import * as speech from './speech.js';
 import { compareSpeech } from './diff.js';
+import { createKids, YEAR_INFO } from './kids.js';
 import { AVATARS, LEVELS, TOPICS, ROLEPLAYS, STORY_THEMES, MODES, SENTENCES, BADGES, WORDS, TUTORS, ACCENTS, tutorById, accentById } from './content.js';
 
 const $ = (sel, root = document) => root.querySelector(sel);
@@ -12,9 +15,11 @@ const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 // The learner's tutor character and how it should sound.
 const tutorOf = (p) => tutorById(p?.tutorId);
+// Young children hear Buddy with a British voice (EYFS / National Curriculum) unless a tutor was chosen.
+const enLang = (p) => (store.isKid(p) && tutorOf(p).id === 'buddy' ? 'en-GB' : accentById(tutorOf(p).accent).lang);
 function voiceOpts(p, override = {}) {
   const t = tutorOf(p);
-  return { voiceURI: p?.voiceURI || '', lang: accentById(t.accent).lang, gender: t.gender, ...override };
+  return { voiceURI: p?.voiceURI || '', lang: enLang(p), gender: t.gender, ...override };
 }
 const say = (text, rate, p = store.activeProfile(), override = {}) => speech.speak(text, rate ?? (p?.rate || 0.9), voiceOpts(p, override));
 
@@ -31,6 +36,10 @@ let chat = null; // current conversation
 let pron = null; // current pronunciation exercise
 let rec = null; // active speech recognition
 let deferredInstall = null;
+
+const kids = createKids({ store, api, speech, esc, ui, go: (...a) => go(...a), voiceOpts, enLang, installCard: () => installCard() });
+const PARENT_SCREENS = ['parents', 'edit-profile', 'transcripts', 'transcript', 'weekly'];
+const KID_COUNTED = ['home', 'subject', 'activity', 'result', 'chat', 'stickers'];
 
 // ================================================================ boot
 
@@ -72,6 +81,17 @@ function boot() {
 function tick() {
   const p = store.activeProfile();
   if (!p || document.hidden) return;
+  if (store.isKid(p)) {
+    // screen time for young children: everything except the parent area
+    if (!KID_COUNTED.includes(ui.screen)) return;
+    if (Date.now() - ui.lastActivity > 120_000 && !speech.isSpeaking()) return;
+    store.addSeconds(p.id, 5);
+    if (ui.screen === 'activity' && kids.current) store.addSubjectSeconds(p.id, kids.current.topic.subject, 5);
+    if (ui.screen === 'chat') store.addSubjectSeconds(p.id, 'talk', 5);
+    if (kids.overLimit(p) && ui.screen !== 'activity') go('rest');
+    else if (kids.overLimit(p) && ui.screen === 'activity') ui.restAfterActivity = true;
+    return;
+  }
   if (!['chat', 'pron'].includes(ui.screen)) return;
   if (Date.now() - ui.lastActivity > 90_000 && !speech.isSpeaking()) return;
   store.addSeconds(p.id, 5);
@@ -80,12 +100,16 @@ function tick() {
 
 // ================================================================ navigation
 
-const TAB_OF = { home: 'home', pick: 'home', chat: 'talk', talk: 'talk', pron: 'home', progress: 'progress', parents: 'parents', 'edit-profile': 'parents', transcripts: 'parents', transcript: 'parents', profiles: 'home', tutors: 'home' };
+const TAB_OF = { home: 'home', pick: 'home', chat: 'talk', talk: 'talk', pron: 'home', progress: 'progress', parents: 'parents', 'edit-profile': 'parents', transcripts: 'parents', transcript: 'parents', profiles: 'home', tutors: 'home', subject: 'home', activity: 'home', result: 'home', stickers: 'progress', rest: 'home', weekly: 'parents' };
 
 function go(screen, params = {}) {
   if (rec) { rec.abort(); rec = null; }
-  if (screen !== 'chat' && screen !== 'pron') speech.stopSpeaking();
-  if (!['parents', 'edit-profile', 'transcripts', 'transcript'].includes(screen)) ui.parentUnlocked = false;
+  if (screen !== 'chat' && screen !== 'pron' && screen !== 'result') speech.stopSpeaking();
+  if (ui.screen === 'activity' && screen !== 'activity') kids.stop();
+  if (!PARENT_SCREENS.includes(screen)) ui.parentUnlocked = false;
+  const kid = store.activeProfile();
+  if (store.isKid(kid) && kids.overLimit(kid) && KID_COUNTED.includes(screen) && screen !== 'result') screen = 'rest';
+  if (screen === 'result' && ui.restAfterActivity) { ui.restAfterActivity = false; }
   ui.screen = screen;
   ui.params = params;
   ui.tab = TAB_OF[screen] || 'home';
@@ -98,14 +122,25 @@ function render() {
   const p = store.activeProfile();
   const setup = ui.screen === 'setup';
   document.body.classList.toggle('no-chrome', setup);
-  $('#profile-btn').innerHTML = p ? `<span class="avatar sm">${esc(p.avatar)}</span><span class="pname">${esc(p.name)}</span>` : '<span class="pname">English Buddy</span>';
+  $('#profile-btn').innerHTML = p ? `<span class="avatar sm">${esc(p.avatar)}</span><span class="pname">${esc(p.name)}</span>` : '<span class="pname">Buddy Learning</span>';
   $('#star-count').textContent = p ? store.progress(p.id).stars : 0;
-  document.querySelectorAll('.tabbar button').forEach((b) => b.classList.toggle('active', b.dataset.tab === ui.tab));
+  const kid = store.isKid(p);
+  document.body.classList.toggle('kid-mode', kid);
+  document.body.classList.toggle('in-activity', ui.screen === 'activity' || ui.screen === 'rest');
+  const tabLabels = kid ? { home: ['🏠', 'Home'], talk: ['💬', 'Buddy'], progress: ['🏅', 'Stickers'], parents: ['👨‍👩‍👧', 'Parents'] }
+    : { home: ['🏠', 'Home'], talk: ['💬', 'Talk'], progress: ['⭐', 'Progress'], parents: ['👨‍👩‍👧', 'Parents'] };
+  document.querySelectorAll('.tabbar button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.tab === ui.tab);
+    const [icon, label] = tabLabels[b.dataset.tab];
+    b.innerHTML = `<span aria-hidden="true">${icon}</span>${label}`;
+  });
 
   const screens = {
     setup: renderSetup, profiles: renderProfiles, home: renderHome, pick: renderPick, chat: renderChat,
     pron: renderPron, tutors: renderTutors, progress: renderProgress, parents: renderParents, 'edit-profile': renderEditProfile,
     transcripts: renderTranscripts, transcript: renderTranscript,
+    subject: () => kids.subject(ui.params.id), activity: kids.activityShell, result: kids.result, stickers: kids.stickers,
+    rest: kids.rest, weekly: () => kids.weekly(ui.params.id),
   };
   if (!p && !['setup', 'profiles', 'parents', 'edit-profile'].includes(ui.screen)) { ui.screen = s.profiles.length ? 'profiles' : 'setup'; }
   view.innerHTML = (screens[ui.screen] || renderHome)();
@@ -114,9 +149,15 @@ function render() {
 }
 
 function afterRender() {
+  const kid = store.isKid(store.activeProfile());
+  if (kid && ui.screen === 'home') kids.afterHome();
+  if (ui.screen === 'activity') kids.startActivity(view, ui.params.id);
+  if (ui.screen === 'result') kids.afterResult();
+  if (ui.screen === 'rest' && !ui.restSpoken) { ui.restSpoken = true; kids.restIntro(); }
+  if (ui.screen === 'subject' && ui.params.intro) { ui.params.intro = false; kids.subjectIntro(ui.params.id); }
   if (ui.screen === 'chat') {
     scrollChat();
-    bindMic($('#mic-btn'), onChatSpeech);
+    bindMic($('#mic-btn'), onChatSpeech, () => (chat?.lang === 'ar' ? 'ar-AE' : 'en-GB'));
   }
   if (ui.screen === 'pron') bindMic($('#pron-mic'), onPronSpeech);
   if (ui.screen === 'parents' && ui.parentUnlocked) loadServerUsage();
@@ -160,23 +201,35 @@ const levelPicker = (selected) => `
     ${LEVELS.map((l) => `<label><input type="radio" name="level" value="${l}" ${l === selected ? 'checked' : ''}><span>${l}</span></label>`).join('')}
   </div>`;
 
+const YEAR_CHOICES = [['FS1', 'FS1', 'ages 3–4'], ['FS2', 'FS2', 'ages 4–5'], ['Y1', 'Year 1', 'ages 5–6'], ['older', 'Older', '6+ & grown-ups']];
+
 function profileForm(p, { submitLabel, setup = false } = {}) {
+  const year = p?.year || (p ? 'older' : 'FS2');
+  const kid = year !== 'older';
   return `
-  <form class="card form" data-form="profile" data-id="${p?.id || ''}" data-setup="${setup ? 1 : ''}">
+  <form class="card form ${kid ? 'is-kid' : 'is-older'}" data-form="profile" data-id="${p?.id || ''}" data-setup="${setup ? 1 : ''}">
     <label class="field"><span>Name (first name or nickname)</span>
       <input name="name" required maxlength="20" autocomplete="off" value="${esc(p?.name || '')}" placeholder="e.g. Mia" ${p ? '' : 'autofocus'}></label>
+    <div class="field"><span>Year group</span>
+      <div class="seg years" role="radiogroup" aria-label="Year group">
+        ${YEAR_CHOICES.map(([v, l, a]) => `<label><input type="radio" name="year" value="${v}" data-input="year" ${v === year ? 'checked' : ''}><span>${l}<small>${a}</small></span></label>`).join('')}
+      </div>
+      <small class="hint kid-only">Buddy Learning: English, Maths, Science and Arabic games for FS1 to Year 1.</small>
+      <small class="hint older-only">English Buddy: conversation practice with an AI tutor.</small>
+    </div>
     <div class="field"><span>Pick an avatar</span>${avatarPicker(p?.avatar || AVATARS[0])}</div>
-    <label class="field"><span>Age</span>
-      <input name="age" type="number" inputmode="numeric" min="3" max="120" required value="${esc(p?.age || '')}" placeholder="e.g. 8"></label>
-    <div class="field"><span>English level</span>${levelPicker(p?.level || 'Beginner')}</div>
-    <label class="field"><span>Likes &amp; interests (optional)</span>
+    <label class="field older-only"><span>Age</span>
+      <input name="age" type="number" inputmode="numeric" min="3" max="120" value="${esc(p?.age || '')}" placeholder="e.g. 8"></label>
+    <div class="field older-only"><span>English level</span>${levelPicker(p?.level || 'Beginner')}</div>
+    <label class="field older-only"><span>Likes &amp; interests (optional)</span>
       <input name="interests" maxlength="160" autocomplete="off" value="${esc(p?.interests || '')}" placeholder="e.g. football, cats, drawing, Minecraft">
       <small class="hint">The tutor uses these to chat about things you enjoy. No personal details, please.</small></label>
     ${p ? `
-      <label class="field"><span>Tutor's speaking speed: <b id="rate-val">${Number(p.rate).toFixed(2)}×</b></span>
+      <label class="field"><span>${kid ? 'Voice speed' : "Tutor's speaking speed"}: <b id="rate-val">${Number(p.rate).toFixed(2)}×</b></span>
         <div class="row"><input name="rate" type="range" min="0.5" max="1.2" step="0.05" value="${p.rate}" data-input="rate">
         <button type="button" class="btn small ghost" data-action="test-rate">🔊 Test</button></div></label>
-      <label class="field"><span>Daily message limit (max set by the Worker)</span>
+      ${kid ? `<div class="kid-only">${kids.settingsFields(p)}</div>` : ''}
+      <label class="field"><span>Daily AI message limit (max set by the Worker)</span>
         <input name="dailyLimit" type="number" inputmode="numeric" min="1" max="500" value="${esc(p.dailyLimit || 60)}"></label>` : ''}
     <button class="btn primary big" type="submit">${submitLabel || 'Save'}</button>
   </form>`;
@@ -191,7 +244,7 @@ function renderSetup() {
     <section class="setup center">
       <div class="buddy-hero" aria-hidden="true"><img src="icons/icon-192.png" alt="" width="140" height="140"></div>
       <h1>Hi! I'm Buddy 👋</h1>
-      <p class="lead">I'm your friendly English tutor. Let's talk, play and learn together!</p>
+      <p class="lead">Welcome to Buddy Learning! Let's play, talk and learn together.</p>
       <button class="btn primary big" data-action="setup-next">Let's start!</button>
     </section>`;
   }
@@ -226,7 +279,7 @@ function renderProfiles() {
     <div class="profile-grid">
       ${s.profiles.map((p) => `
         <button class="profile-tile ${p.id === s.activeProfileId ? 'active' : ''}" data-action="choose-profile" data-id="${p.id}">
-          <span class="avatar xl">${esc(p.avatar)}</span><b>${esc(p.name)}</b><small>${esc(p.level)}</small>
+          <span class="avatar xl">${esc(p.avatar)}</span><b>${esc(p.name)}</b><small>${esc(store.isKid(p) ? YEAR_INFO[p.year].label : p.level)}</small>
         </button>`).join('')}
       <button class="profile-tile add" data-action="add-profile"><span class="avatar xl">➕</span><b>Add</b><small>new learner</small></button>
     </div>
@@ -246,7 +299,7 @@ function installCard() {
   return `
   <div class="card install">
     <button class="x" data-action="hide-install" aria-label="Hide">✕</button>
-    <b>📲 Put English Buddy on your home screen</b>
+    <b>📲 Put Buddy Learning on your home screen</b>
     ${deferredInstall ? '<button class="btn primary small" data-action="install">Install app</button>'
       : ios ? '<p>In Safari, tap <b>Share</b> <span aria-hidden="true">⬆️</span> then <b>Add to Home Screen</b>.</p>'
         : '<p>Open the browser menu <b>⋮</b> and tap <b>Install app</b> or <b>Add to Home screen</b>.</p>'}
@@ -255,6 +308,7 @@ function installCard() {
 
 function renderHome() {
   const p = store.activeProfile();
+  if (store.isKid(p)) return kids.home();
   const sum = store.summary(p.id);
   const hour = new Date().getHours();
   const hello = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -408,13 +462,14 @@ function startChat(mode, topic) {
   const session = store.startSession(p.id, mode, topic);
   session.tutorId = tutorOf(p).id;
   store.save();
-  chat = { mode, topic, words, messages: [], sessionId: session.id, busy: false, notice: null, interim: '', profileId: p.id };
+  chat = { mode, topic, words, messages: [], sessionId: session.id, busy: false, notice: null, interim: '', profileId: p.id, lang: mode === 'kids' && topic === 'ar' ? 'ar' : 'en' };
   store.recordMode(p.id, mode);
   go('chat');
   askBuddy();
 }
 
 function modeTitle(mode, topic) {
+  if (mode === 'kids') return `💬 Talk to Buddy${topic === 'ar' ? ' · العربية' : ''}`;
   const m = MODES.find((x) => x.id === mode);
   const extra = mode === 'free' ? TOPICS.find((t) => t.id === topic)?.label
     : mode === 'roleplay' ? ROLEPLAYS.find((t) => t.id === topic)?.label : '';
@@ -441,6 +496,9 @@ function renderChat() {
       <b>${esc(modeTitle(chat.mode, chat.topic))}</b>
       <button class="btn small ghost" data-action="restart-chat" aria-label="Start again">↻</button>
     </div>
+    ${chat.mode === 'kids' ? `<div class="lang-toggle" role="group" aria-label="Language">
+      <button class="${chat.lang === 'en' ? 'on' : ''}" data-action="chat-lang" data-lang="en">English</button>
+      <button class="${chat.lang === 'ar' ? 'on' : ''}" data-action="chat-lang" data-lang="ar" lang="ar">العربية</button></div>` : ''}
     ${wordsBar}
     <div class="messages" id="messages" aria-live="polite">
       ${chat.messages.map(messageHtml).join('')}
@@ -457,7 +515,7 @@ function messageHtml(m, i) {
     return `
     <div class="msg buddy">
       <span class="avatar sm" aria-hidden="true">${tutorOf(store.activeProfile()).emoji}</span>
-      <p>${esc(m.content)}</p>
+      <p ${/[\u0600-\u06FF]/.test(m.content) ? 'dir="rtl" lang="ar"' : ''}>${esc(m.content)}</p>
       <button class="replay" data-action="replay" data-index="${i}" aria-label="Replay">🔊</button>
     </div>`;
   }
@@ -552,7 +610,7 @@ async function askBuddy(isRetry = false) {
     store.appendToSession(p.id, c.sessionId, { role: 'assistant', text: data.reply, fixes: data.fixes });
     rerenderChat();
     ui.lastActivity = Date.now();
-    say(data.reply, p.rate || 0.9, p);
+    speakReply(data.reply, p);
   } catch (err) {
     if (chat !== c) return;
     c.busy = false;
@@ -583,9 +641,14 @@ async function askBuddy(isRetry = false) {
   }
 }
 
+function speakReply(text, p) {
+  if (store.isKid(p)) kids.kidSay([{ text, lang: /[\u0600-\u06FF]/.test(text) ? 'ar' : 'en' }]);
+  else say(text, p.rate || 0.9, p);
+}
+
 // ---------------------------------------------------------------- push-to-talk
 
-function bindMic(btn, onText) {
+function bindMic(btn, onText, langFn = () => 'en-US') {
   if (!btn || !speech.sttSupported) return;
   let pressStart = 0;
   let toggled = false;
@@ -599,7 +662,7 @@ function bindMic(btn, onText) {
     pressStart = Date.now();
     toggled = false;
     try {
-      rec = speech.listen({ onInterim: (t) => onInterim(t) });
+      rec = speech.listen({ onInterim: (t) => onInterim(t), lang: langFn() });
     } catch {
       toast('Could not start the microphone.');
       return;
@@ -736,6 +799,7 @@ function onPronSpeech(text) {
 
 function renderProgress() {
   const p = store.activeProfile();
+  if (store.isKid(p)) return kids.stickers();
   const sum = store.summary(p.id);
   const pr = store.progress(p.id);
   const mistakes = store.topMistakes(p.id);
@@ -813,6 +877,7 @@ function renderParents() {
     <div class="row between"><h1>👨‍👩‍👧 Parents</h1><button class="btn small ghost" data-action="lock">🔒 Lock</button></div>
     <div class="card" id="server-card"><h2>Today on the server</h2><p class="hint">Checking connection…</p></div>
     ${s.profiles.map((p) => {
+      if (store.isKid(p)) return kids.parentCard(p);
       const sum = store.summary(p.id);
       const top = store.topMistakes(p.id, 3);
       return `
@@ -927,7 +992,9 @@ async function onClick(e) {
   const tabBtn = e.target.closest('.tabbar button');
   if (tabBtn) {
     const tab = tabBtn.dataset.tab;
-    if (tab === 'talk') go('chat');
+    const p = store.activeProfile();
+    if (tab === 'talk' && store.isKid(p) && (!chat || chat.profileId !== p.id || chat.mode !== 'kids')) startChat('kids', 'en');
+    else if (tab === 'talk') go('chat');
     else go(tab);
     return;
   }
@@ -956,10 +1023,17 @@ async function onClick(e) {
       break;
     }
     case 'start': startChat(el.dataset.mode, el.dataset.topic); break;
+    case 'kid-greet': kids.greet(); break;
+    case 'kid-subject': go('subject', { id: el.dataset.id, intro: true }); break;
+    case 'kid-subject-hear': kids.subjectIntro(el.dataset.id); break;
+    case 'kid-topic': go('activity', { id: el.dataset.id }); break;
+    case 'kid-talk': startChat('kids', chat?.mode === 'kids' ? chat.lang : 'en'); break;
+    case 'kid-sticker': kids.kidSay('Wow! What a great sticker!'); break;
+    case 'chat-lang': if (chat) startChat('kids', el.dataset.lang); break;
     case 'restart-chat': if (chat) startChat(chat.mode, chat.mode === 'story' ? undefined : chat.topic); break;
     case 'replay': {
       const m = chat?.messages[Number(el.dataset.index)];
-      if (m) say(m.content, p?.rate || 0.9, p);
+      if (m) speakReply(m.content, p);
       break;
     }
     case 'say': say(el.dataset.text, (p?.rate || 0.9) * 0.9, p); break;
@@ -1053,13 +1127,22 @@ async function onSubmit(e) {
   }
 
   if (kind === 'profile') {
+    const year = ['FS1', 'FS2', 'Y1'].includes(f.get('year')) ? f.get('year') : 'older';
+    const kidYear = year !== 'older';
     const data = {
       name: String(f.get('name') || '').trim(),
       avatar: f.get('avatar') || AVATARS[0],
-      age: Math.max(3, Math.min(120, parseInt(f.get('age'), 10) || 8)),
+      age: Math.max(3, Math.min(120, parseInt(f.get('age'), 10) || (kidYear ? { FS1: 3, FS2: 4, Y1: 5 }[year] : 8))),
       level: LEVELS.includes(f.get('level')) ? f.get('level') : 'Beginner',
       interests: String(f.get('interests') || '').trim().slice(0, 160),
+      year,
     };
+    if (kidYear && form.dataset.id) {
+      data.minutes = Math.max(5, Math.min(180, parseInt(f.get('minutes'), 10) || 20));
+      data.subjects = Object.fromEntries(store.KID_SUBJECTS.map((x) => [x, f.get(`subj-${x}`) === 'on']));
+      data.arHelper = f.get('arHelper') === 'on';
+      data.aiCheer = f.get('aiCheer') === 'on';
+    }
     if (!data.name) { toast('Please enter a name.'); return; }
     const id = form.dataset.id;
     if (id) {
@@ -1069,6 +1152,7 @@ async function onSubmit(e) {
         rate: Number(f.get('rate') || existing.rate),
         dailyLimit: Math.max(1, Math.min(500, parseInt(f.get('dailyLimit'), 10) || 60)),
       });
+      if (kidYear) store.kidDefaults(store.get().profiles.find((x) => x.id === id));
       toast('Saved ✅');
       go('parents');
     } else {
@@ -1078,6 +1162,17 @@ async function onSubmit(e) {
       if (form.dataset.setup) ui.setupStep = 0;
       go(ui.screen === 'edit-profile' ? 'parents' : 'home');
     }
+    return;
+  }
+
+  if (kind === 'rest-pin') {
+    const p = store.activeProfile();
+    if ((await store.hashPin(String(f.get('pin')))) === store.get().parentPinHash) {
+      store.addBonusMinutes(p.id, 10);
+      ui.restSpoken = false;
+      toast('⏱️ 10 more minutes added');
+      go('home');
+    } else { toast('Wrong PIN'); form.reset(); }
     return;
   }
 
@@ -1111,6 +1206,11 @@ async function onSubmit(e) {
 function onInput(e) {
   const kind = e.target.dataset.input;
   if (kind === 'rate') { const v = $('#rate-val'); if (v) v.textContent = `${Number(e.target.value).toFixed(2)}×`; }
+  if (kind === 'year') {
+    const form = e.target.closest('form');
+    form.classList.toggle('is-kid', e.target.value !== 'older');
+    form.classList.toggle('is-older', e.target.value === 'older');
+  }
   if (kind === 'theme') { store.set({ theme: e.target.value }); applyTheme(); }
   if (kind === 'voice') {
     const p = store.activeProfile();
@@ -1126,6 +1226,6 @@ function onInput(e) {
 }
 
 // expose a few things for automated tests
-window.__buddy = { store, ui, get chat() { return chat; }, get pron() { return pron; }, onChatSpeech: (t) => onChatSpeech(t), onPronSpeech: (t) => onPronSpeech(t), WORDS };
+window.__buddy = { store, ui, go, kids, get chat() { return chat; }, get pron() { return pron; }, onChatSpeech: (t) => onChatSpeech(t), onPronSpeech: (t) => onPronSpeech(t), WORDS };
 
 boot();

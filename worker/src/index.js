@@ -18,7 +18,9 @@ const MAX_HISTORY = 12;
 const MAX_TOKENS = 250;
 const MAX_TOKENS_STORY = 350; // the opening story needs a little more room
 const MAX_MESSAGE_CHARS = 600;
-const MODES = ['free', 'roleplay', 'words', 'story'];
+const MODES = ['free', 'roleplay', 'words', 'story', 'kids', 'cheer'];
+const MAX_TOKENS_KIDS = 150;
+const MAX_TOKENS_CHEER = 80;
 
 // ---------------------------------------------------------------- helpers
 
@@ -145,6 +147,8 @@ async function handleChat(request, env, ip) {
     topic: body.topic,
     words: body.words,
     tutor: body.tutor,
+    lang: body.lang === 'ar' ? 'ar' : 'en',
+    activity: body.activity,
   };
   const messages = prepareMessages(body.messages, ctx);
   if (!messages) return json({ error: 'bad_request', message: 'Last message must be from the student' }, 400, request, env);
@@ -168,7 +172,7 @@ async function handleChat(request, env, ip) {
       staticPrompt: STATIC_PROMPT,
       dynamicPrompt: buildDynamicPrompt(ctx),
       messages,
-      maxTokens: isStoryStart ? MAX_TOKENS_STORY : MAX_TOKENS,
+      maxTokens: ctx.mode === 'cheer' ? MAX_TOKENS_CHEER : ctx.mode === 'kids' ? MAX_TOKENS_KIDS : isStoryStart ? MAX_TOKENS_STORY : MAX_TOKENS,
     });
     const { reply, fixes } = postProcess(raw);
     return json({ reply: reply || SAFE_REDIRECT, fixes, usage: { used: slot.used, limit: slot.limit } }, 200, request, env);

@@ -1,10 +1,13 @@
 // Service worker: makes the app open fast and work as an installed app.
 // BUILD_ID is replaced on every deploy so phones pick up new versions.
 const BUILD_ID = 'dev';
-const CACHE = `english-buddy-${BUILD_ID}`;
+const CACHE = `buddy-learning-${BUILD_ID}`;
 const SHELL = [
   './', 'index.html', 'styles.css', 'config.js', 'manifest.webmanifest',
-  'js/app.js', 'js/api.js', 'js/content.js', 'js/diff.js', 'js/speech.js', 'js/store.js',
+  'js/app.js', 'js/api.js', 'js/content.js', 'js/diff.js', 'js/speech.js', 'js/store.js', 'js/kids.js',
+  // Buddy Learning activities: cached so every game works offline
+  'js/learn/core.js', 'js/learn/engine.js', 'js/learn/visuals.js',
+  'js/learn/english.js', 'js/learn/maths.js', 'js/learn/science.js', 'js/learn/arabic.js',
   'icons/icon-192.png', 'icons/icon-512.png', 'icons/apple-touch-icon.png', 'icons/favicon.svg',
 ];
 
@@ -15,7 +18,7 @@ self.addEventListener('install', (e) => {
 self.addEventListener('activate', (e) => {
   e.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(keys.filter((k) => k.startsWith('english-buddy-') && k !== CACHE).map((k) => caches.delete(k))))
+      .then((keys) => Promise.all(keys.filter((k) => (k.startsWith('english-buddy-') || k.startsWith('buddy-learning-')) && k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim()),
   );
 });

@@ -132,6 +132,7 @@ await step('first run: welcome, family code, create profile', async () => {
   await page.click('text=Check code');
   await page.waitForSelector('text=Who is learning?');
   await page.fill('input[name=name]', 'Mia');
+  await page.click('.seg.years label:has-text("Older")');
   await page.click('.avatar-opt:nth-child(5)');
   await page.fill('input[name=age]', '7');
   await page.click('.seg label:has-text("Beginner")');
@@ -278,6 +279,7 @@ await step('parents: create PIN, dashboard, transcripts, edit profile, lock', as
 
   await page.click('text=Add family member');
   await page.fill('input[name=name]', 'Dad');
+  await page.click('.seg.years label:has-text("Older")');
   await page.fill('input[name=age]', '41');
   await page.click('.seg label:has-text("Advanced")');
   await page.click('text=Create profile');
